@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <memory>
+#include <ctime>
 #include <plog/Log.h>
 
 using namespace std;
@@ -30,6 +31,7 @@ DWORD tftp::receiver::thread_main() noexcept {
         u_long mode = 0;
         ioctlsocket(sock, FIONBIO, &mode);
         fd_set fds;
+		time_t tm;
         do {
             FD_ZERO(&fds);
             FD_SET(sock, &fds);
@@ -42,7 +44,8 @@ DWORD tftp::receiver::thread_main() noexcept {
             SOCKET client = accept(sock, nullptr, nullptr);
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
-			LOG_INFO << "Accept connecton" << endl;
+			time(&tm);
+			LOG_INFO << asctime(localtime(&tm)) << " accepted " << endl;
             auto conn = make_shared<connection>(client);
             conn->start();
             connections.push_back(conn);
