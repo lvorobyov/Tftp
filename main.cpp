@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
                     i ++;
                     continue;
                 }
-                tftp.send(argv[1]);
+                tftp.send(argv[i]);
             }
         }
     } catch (logic_error const& ex) {
