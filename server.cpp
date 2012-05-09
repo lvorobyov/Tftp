@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include "socket.h"
 #include <stdexcept>
+#include <plog/Log.h>
 using namespace std;
 
 #include "receiver.h"
@@ -37,6 +38,7 @@ protected:
 };
 
 int main(int argc, char* argv[]) {
+	plog::init(plog::info, "tftps.log");
     tftps server;
 	try {
 		server.start();

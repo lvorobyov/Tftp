@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <memory>
+#include <plog/Log.h>
 
 using namespace std;
 
@@ -41,6 +42,7 @@ DWORD tftp::receiver::thread_main() noexcept {
             SOCKET client = accept(sock, nullptr, nullptr);
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
+			LOG_INFO << "Accept connecton" << endl;
             auto conn = make_shared<connection>(client);
             conn->start();
             connections.push_back(conn);
