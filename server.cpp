@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <csignal>
+#include <unistd.h>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -20,6 +21,10 @@ using namespace std;
 
 #define BUFFER_SIZE 512
 #define TFTP_PORT 8969
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 255
+#endif
 
 class tftp {
 private:
@@ -78,7 +83,9 @@ void tftp::start() {
                          (sockaddr*)&client, &length);
         if (n == SOCKET_ERROR)
             throw logic_error("receive failed");
-        printf("%s\n", buf);
+        char hostname[HOST_NAME_MAX];
+        n = gethostname(hostname, HOST_NAME_MAX);
+        sendto(sock, hostname, n, 0, (sockaddr*)&client, length);
     } while(active);
 }
 
