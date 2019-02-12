@@ -83,7 +83,7 @@ void tftp::start() {
 }
 
 void tftp::cleanup() noexcept {
-    printf("Bue!\n");
+    printf("Bye!\n");
     switch(state) {
         case 2:
             close(sock);
