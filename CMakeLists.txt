@@ -3,6 +3,8 @@ project(Tftp)
 
 set(CMAKE_CXX_STANDARD 17)
 
+include_directories("%WORK%/include")
+
 link_libraries(ws2_32)
 add_executable(tftp main.cpp)
 add_executable(tftps server.cpp)
