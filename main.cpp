@@ -8,6 +8,8 @@ using namespace std;
 
 #define BUFFER_SIZE 512
 
+#define BROADCAST "Broadcast"
+
 int main() {
     WSADATA wsd;
     WSAStartup(MAKEWORD(2,2), &wsd);
@@ -26,6 +28,7 @@ int main() {
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == SOCKET_ERROR)
         return 1;
     char buf[BUFFER_SIZE];
+    strcpy(buf, BROADCAST);
     server.sin_port = htons(TFTP_PORT);
     server.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     if (sendto(sock, buf, 1, 0, (sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
@@ -36,6 +39,8 @@ int main() {
         n = recvfrom(sock, buf, BUFFER_SIZE, 0, (sockaddr*)&server, &length);
         if (n == SOCKET_ERROR && WSAGetLastError() == WSAETIMEDOUT)
             break;
+        if (server.sin_addr.s_addr == htonl(INADDR_LOOPBACK) && strcmp(buf, BROADCAST) == 0)
+            continue;
         buf[n] = '\0';
         const auto& s = server.sin_addr;
         printf("%s %d.%d.%d.%d\n", buf, s.s_net, s.s_host, s.s_lh, s.s_impno);
