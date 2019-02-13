@@ -84,8 +84,8 @@ void tftp::start() {
         if (n == SOCKET_ERROR)
             throw logic_error("receive failed");
         char hostname[HOST_NAME_MAX];
-        n = gethostname(hostname, HOST_NAME_MAX);
-        if (sendto(sock, hostname, n, 0, (sockaddr*)&client, length) == SOCKET_ERROR)
+        gethostname(hostname, HOST_NAME_MAX);
+        if (sendto(sock, hostname, strlen(hostname), 0, (sockaddr*)&client, length) == SOCKET_ERROR)
             throw logic_error("send failed");
     } while(active);
 }
