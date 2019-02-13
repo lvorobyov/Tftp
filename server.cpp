@@ -11,6 +11,7 @@
 #include <ws2tcpip.h>
 #define close closesocket
 #define error WSAGetLastError()
+#define ioctl ioctlsocket
 #else
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -73,16 +74,23 @@ void tftp::start() {
     BOOL is_broadcast = TRUE;
     if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&is_broadcast, sizeof(is_broadcast)) == SOCKET_ERROR)
         throw logic_error("option setting error");
-    static sig_atomic_t active = true;
+    static volatile sig_atomic_t active = true;
     signal(SIGINT, [](int s) { active = false; });
+	
+	DWORD timeout = 500;
+	if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == SOCKET_ERROR)
+        throw logic_error("timeout setting error");
 
     sockaddr_in client{};
     int length = sizeof(client);
     do {
         int n = recvfrom(sock, buf, BUFFER_SIZE, 0,
                          (sockaddr*)&client, &length);
-        if (n == SOCKET_ERROR)
-            throw logic_error("receive failed");
+        if (n == SOCKET_ERROR) {
+			if (WSAGetLastError() != WSAETIMEDOUT)
+				throw logic_error("receive failed");
+			else continue;
+		}
         char hostname[HOST_NAME_MAX];
         gethostname(hostname, HOST_NAME_MAX);
         if (sendto(sock, hostname, strlen(hostname), 0, (sockaddr*)&client, length) == SOCKET_ERROR)
