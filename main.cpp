@@ -55,10 +55,10 @@ int main(int argc, char* argv[]) {
         int index;
         printf("You choice: ");
         scanf("%d", &index);
-        if (index > 0 && index < peers.size()) {
+        if (index > 0 && index <= peers.size()) {
             for (int i = 1; i < argc; ++i) {
                 try {
-                    transfer(peers[index], argv[1]);
+                    transfer(peers[index-1], argv[1]);
                 } catch (logic_error const& ex) {
                     fprintf(stderr, "%s\n", ex.what());
                     break;
