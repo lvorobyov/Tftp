@@ -40,6 +40,7 @@ int main() {
         const auto& s = server.sin_addr;
         printf("%s %d.%d.%d.%d\n", buf, s.s_net, s.s_host, s.s_lh, s.s_impno);
     } while (true);
+    closesocket(sock);
     WSACleanup();
     return 0;
 }
