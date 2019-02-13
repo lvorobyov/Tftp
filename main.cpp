@@ -34,10 +34,12 @@ int main() {
     int n;
     do {
         n = recvfrom(sock, buf, BUFFER_SIZE, 0, (sockaddr*)&server, &length);
+        if (n == SOCKET_ERROR && WSAGetLastError() == WSAETIMEDOUT)
+            break;
         buf[n] = '\0';
         const auto& s = server.sin_addr;
         printf("%s %d.%d.%d.%d\n", buf, s.s_net, s.s_host, s.s_lh, s.s_impno);
-    } while (n != SOCKET_ERROR || WSAGetLastError() != WSAETIMEDOUT);
+    } while (true);
     WSACleanup();
     return 0;
 }
