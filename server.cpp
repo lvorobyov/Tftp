@@ -6,19 +6,12 @@
 #include <cstdint>
 #include <csignal>
 #include <unistd.h>
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#define close closesocket
-#define error WSAGetLastError()
-#define ioctl ioctlsocket
-#else
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#typedef int SOCKET
-#endif
+#include "socket.h"
 #include <stdexcept>
 using namespace std;
+
+#include "receiver.h"
+using namespace tftp;
 
 #define BUFFER_SIZE 512
 #define TFTP_PORT 8969
@@ -27,7 +20,7 @@ using namespace std;
 #define HOST_NAME_MAX 255
 #endif
 
-class tftp {
+class tftps {
 private:
     int state = 0;
     SOCKET sock = INVALID_SOCKET;
@@ -35,7 +28,7 @@ private:
 public:
     void start();
 
-	~tftp() noexcept {
+	~tftps() noexcept {
 		cleanup();
 	}
 
@@ -44,7 +37,7 @@ protected:
 };
 
 int main(int argc, char* argv[]) {
-    tftp server;
+    tftps server;
 	try {
 		server.start();
 	} catch(const logic_error& ex) {
@@ -54,7 +47,7 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-void tftp::start() {
+void tftps::start() {
     char buf[BUFFER_SIZE];
 #ifdef _WIN32
     WSADATA wsd{0};
@@ -81,6 +74,8 @@ void tftp::start() {
 	if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == SOCKET_ERROR)
         throw logic_error("timeout setting error");
 
+	receiver thread1;
+	thread1.start();
     sockaddr_in client{};
     int length = sizeof(client);
     do {
@@ -96,9 +91,11 @@ void tftp::start() {
         if (sendto(sock, hostname, strlen(hostname), 0, (sockaddr*)&client, length) == SOCKET_ERROR)
             throw logic_error("send failed");
     } while(active);
+    thread1.stop();
+    thread1.wait();
 }
 
-void tftp::cleanup() noexcept {
+void tftps::cleanup() noexcept {
     printf("Bye!\n");
     switch(state) {
         case 2:
