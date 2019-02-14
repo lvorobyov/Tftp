@@ -123,9 +123,17 @@ void transfer(in_addr peer, char *filename) {
         throw logic_error("connect failed");
     }
     FILE *f = fopen(filename, "rb+");
+	fseek(f, 0, SEEK_END);
+	const int size = ftell(f);
+	fseek(f, 0, SEEK_SET);
     char buf[BUFFER_SIZE];
+	int count = 0, progress = 0;
     int len;
     do {
+		if (count++ * 80 * BUFFER_SIZE / size > progress) {
+			printf("=");
+			progress++;
+		}
         len = fread(buf,sizeof(char),BUFFER_SIZE,f);
         send(sock,buf,len,0);
     } while(len >= BUFFER_SIZE);
