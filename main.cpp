@@ -5,39 +5,97 @@
 #include <vector>
 using namespace std;
 
+#include <cxxopts.hpp>
+using namespace cxxopts;
+
 #define TFTP_PORT 8969
 
 #define BUFFER_SIZE 512
 
 #define BROADCAST "Broadcast"
 
+void discover(DWORD timeout, vector<in_addr> &peers);
+
 void transfer(in_addr peer, char *filename);
 
 int main(int argc, char* argv[]) {
     WSADATA wsd;
     WSAStartup(MAKEWORD(2,2), &wsd);
+    Options options(argv[0], "Transfer file client 1.0");
+    options.add_options()
+            ("h,host", "receiver host", value<string>())
+            ("t,timeout", "discover delay timeout", value<DWORD>())
+            ("h,help", "show this help");
+    auto result = options.parse(argc,argv);
+    if (result.count("help")) {
+        cout << options.help() << endl;
+        return 0;
+    }
+    DWORD timeout = result.count("t")? result["t"].as<DWORD>() : 500;
+    in_addr peer{0};
+    int status = EXIT_SUCCESS;
+    try {
+        if (result.count("host")) {
+            addrinfo hints{0};
+            hints.ai_family = AF_INET;
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_protocol = IPPROTO_TCP;
+            addrinfo *pai;
+            if (getaddrinfo(result["host"].as<string>().c_str(), "8969", &hints, &pai) == SOCKET_ERROR)
+                throw logic_error("get host info failed");
+            if (pai != nullptr)
+                peer = ((sockaddr_in*)pai->ai_addr)->sin_addr;
+        } else {
+            vector<in_addr> peers;
+            discover(timeout, peers);
+            if (peers.size() > 1) {
+                int index;
+                printf("You choice: ");
+                scanf("%d", &index);
+                if (index > 0 && index <= peers.size())
+                    peer = peers[index-1];
+            } else if (peers.size() == 1) {
+                peer = peers[0];
+            }
+        }
+        if (peer.s_addr != 0) {
+            for (int i = 1; i < argc; ++i) {
+                if (argv[i][0] == '-') {
+                    i ++;
+                    continue;
+                }
+                transfer(peer, argv[1]);
+            }
+        }
+    } catch (logic_error const& ex) {
+        fprintf(stderr, "%s\n", ex.what());
+        status = EXIT_FAILURE;
+    }
+    WSACleanup();
+    return status;
+}
+
+void discover(DWORD timeout, vector<in_addr> &peers) {
     SOCKET sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock == INVALID_SOCKET)
-        return 1;
+        throw logic_error("socket failed");
     sockaddr_in addr{AF_INET}, server{AF_INET};
     addr.sin_port = 0;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
-        return 1;
+        throw logic_error("bind failed");
     BOOL is_broadcast = TRUE;
     if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&is_broadcast, sizeof(is_broadcast)) == SOCKET_ERROR)
-        return 1;
-    DWORD timeout = 500;
+        throw logic_error("set broadcast failed");
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == SOCKET_ERROR)
-        return 1;
+        throw logic_error("set timeout failed");
     char buf[BUFFER_SIZE];
     strcpy(buf, BROADCAST);
     server.sin_port = htons(TFTP_PORT);
     server.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     if (sendto(sock, buf, 1, 0, (sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
-        return 1;
+        throw logic_error("send failed");
     int length = sizeof(server);
-    vector<in_addr> peers;
     int n;
     do {
         n = recvfrom(sock, buf, BUFFER_SIZE, 0, (sockaddr*)&server, &length);
@@ -51,23 +109,6 @@ int main(int argc, char* argv[]) {
         peers.push_back(s);
     } while (true);
     closesocket(sock);
-    if (argc > 1) {
-        int index;
-        printf("You choice: ");
-        scanf("%d", &index);
-        if (index > 0 && index <= peers.size()) {
-            for (int i = 1; i < argc; ++i) {
-                try {
-                    transfer(peers[index-1], argv[1]);
-                } catch (logic_error const& ex) {
-                    fprintf(stderr, "%s\n", ex.what());
-                    break;
-                }
-            }
-        }
-    }
-    WSACleanup();
-    return 0;
 }
 
 void transfer(in_addr peer, char *filename) {
