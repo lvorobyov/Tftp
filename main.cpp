@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     WSAStartup(MAKEWORD(2,2), &wsd);
     Options options(argv[0], "Transfer file client 1.0");
     options.add_options()
-            ("h,host", "receiver host", value<string>())
+            ("r,host", "receiver host", value<string>())
             ("t,timeout", "discover delay timeout", value<DWORD>())
             ("h,help", "show this help");
     auto result = options.parse(argc,argv);
