@@ -132,4 +132,5 @@ void transfer(in_addr peer, char *filename) {
     fclose(f);
     if (shutdown(sock, SD_SEND) == SOCKET_ERROR)
         throw logic_error("shutdown failed");
+    closesocket(sock);
 }
