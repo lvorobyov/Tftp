@@ -130,10 +130,11 @@ void transfer(in_addr peer, char *filename) {
 	int count = 0, progress = 0;
     int len;
     do {
-		while (count++ * 80 * BUFFER_SIZE / size > progress) {
+		while (count * 80 * BUFFER_SIZE / size > progress) {
 			printf("=");
 			progress++;
 		}
+		count ++;
         len = fread(buf,sizeof(char),BUFFER_SIZE,f);
         send(sock,buf,len,0);
     } while(len >= BUFFER_SIZE);
