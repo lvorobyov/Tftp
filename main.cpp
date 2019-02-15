@@ -130,7 +130,7 @@ void transfer(in_addr peer, char *filename) {
 	int count = 0, progress = 0;
     int len;
     do {
-		if (count++ * 80 * BUFFER_SIZE / size > progress) {
+		while (count++ * 80 * BUFFER_SIZE / size > progress) {
 			printf("=");
 			progress++;
 		}
