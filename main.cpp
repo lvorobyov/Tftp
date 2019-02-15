@@ -135,6 +135,7 @@ void transfer(in_addr peer, char *filename) {
 		if ((sum += len) * 80 / size > progress) {
 			while (sum * 80 / size > progress++)
 				printf("=");
+			progress --;
 		}
     } while(len >= BUFFER_SIZE);
     fclose(f);
