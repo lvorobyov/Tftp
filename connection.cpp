@@ -18,10 +18,9 @@ DWORD tftp::connection::thread_main() noexcept {
     FILE *f = fopen(filename, "wb+");
     char buf[BUFFER_SIZE];
     int len;
-    do {
-        len = recv(sock, buf, BUFFER_SIZE, 0);
+    while((len = recv(sock, buf, BUFFER_SIZE, 0)) != 0) {
         fwrite(buf, sizeof(char), static_cast<size_t>(len), f);
-    } while(len >= BUFFER_SIZE);
+    }
     fclose(f);
     return 0;
 }
