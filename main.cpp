@@ -123,6 +123,8 @@ void transfer(in_addr peer, char *filename) {
         throw logic_error("connect failed");
     }
     FILE *f = fopen(filename, "rb+");
+	if (f == nullptr)
+		throw logic_error("file not exists");
 	fseek(f, 0, SEEK_END);
 	const int size = ftell(f);
 	fseek(f, 0, SEEK_SET);
