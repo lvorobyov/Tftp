@@ -127,16 +127,15 @@ void transfer(in_addr peer, char *filename) {
 	const int size = ftell(f);
 	fseek(f, 0, SEEK_SET);
     char buf[BUFFER_SIZE];
-	int count = 0, progress = 0;
+	int sum = 0, progress = 0;
     int len;
     do {
-		while (count * 80 * BUFFER_SIZE / size > progress) {
-			printf("=");
-			progress++;
-		}
-		count ++;
         len = fread(buf,sizeof(char),BUFFER_SIZE,f);
         send(sock,buf,len,0);
+		if ((sum += len) * 80 / size > progress) {
+			while (sum * 80 / size > progress++)
+				printf("=");
+		}
     } while(len >= BUFFER_SIZE);
     fclose(f);
     if (shutdown(sock, SD_SEND) == SOCKET_ERROR)
