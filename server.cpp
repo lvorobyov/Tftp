@@ -18,6 +18,7 @@ using namespace tftp;
 
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 255
+#define SERVICE_NAME "Transfer file service"
 #endif
 
 class tftps {
@@ -36,15 +37,45 @@ protected:
     void cleanup() noexcept;
 };
 
+void WINAPI service_main(DWORD,LPCTSTR);
+
 int main(int argc, char* argv[]) {
-    tftps server;
-	try {
-		server.start();
-	} catch(const logic_error& ex) {
-		printf("%s: %d\n", ex.what(), error);
-		return EXIT_FAILURE;
-	}
+    char service_name[] = SERVICE_NAME;
+    SERVICE_TABLE_ENTRY service_table[] {
+            {service_name, (LPSERVICE_MAIN_FUNCTION)service_main},
+            {nullptr, nullptr}
+    };
+    if (! StartServiceCtrlDispatcher(service_table)) {
+        printf("%s: %d\n", "StartServiceCtrlDispatcher", static_cast<int>(GetLastError()));
+        return EXIT_FAILURE;
+    }
     return EXIT_SUCCESS;
+}
+
+void WINAPI service_control(DWORD dwCode);
+
+void WINAPI service_main(DWORD, LPCTSTR) {
+    SERVICE_STATUS_HANDLE  status_handle =
+            RegisterServiceCtrlHandler(SERVICE_NAME, (LPHANDLER_FUNCTION) service_control);
+    tftps server;
+    try {
+        server.start();
+    } catch(const logic_error& ex) {
+        printf("%s: %d\n", ex.what(), error);
+    }
+}
+
+void WINAPI service_control(DWORD dwCode) {
+    switch (dwCode) {
+        case SERVICE_CONTROL_STOP:
+            // Stop service
+            break;
+        case SERVICE_CONTROL_INTERROGATE:
+            //SetServiceStatus(status_handle);
+            break;
+        default:
+            break;
+    }
 }
 
 void tftps::start() {
