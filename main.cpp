@@ -112,36 +112,52 @@ void discover(DWORD timeout, vector<in_addr> &peers) {
 }
 
 void transfer(in_addr peer, char *filename) {
-    SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (sock == INVALID_SOCKET)
-        throw logic_error("socket error");
-    sockaddr_in addr {PF_INET};
-    addr.sin_port = htons(TFTP_PORT);
-    addr.sin_addr = peer;
-    if (connect(sock, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR) {
-        closesocket(sock);
-        throw logic_error("connect failed");
-    }
-    FILE *f = fopen(filename, "rb+");
-	if (f == nullptr)
-		throw logic_error("file not exists");
-	fseek(f, 0, SEEK_END);
-	const int size = ftell(f);
-	fseek(f, 0, SEEK_SET);
-    char buf[BUFFER_SIZE];
-	int sum = 0, progress = 0;
-    int len;
-    do {
-        len = fread(buf,sizeof(char),BUFFER_SIZE,f);
-        send(sock,buf,len,0);
-		if ((sum += len) * 80 / size > progress) {
-			while (sum * 80 / size > progress++)
-				printf("=");
-			progress --;
-		}
-    } while(len >= BUFFER_SIZE);
-    fclose(f);
-    if (shutdown(sock, SD_SEND) == SOCKET_ERROR)
-        throw logic_error("shutdown failed");
-    closesocket(sock);
+	int step = 0;
+	SOCKET sock = INVALID_SOCKET;
+	FILE *f = nullptr;
+	exception_ptr eptr;
+	try {
+		sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (sock == INVALID_SOCKET)
+			throw logic_error("socket error");
+		step = 1;
+		sockaddr_in addr {PF_INET};
+		addr.sin_port = htons(TFTP_PORT);
+		addr.sin_addr = peer;
+		if (connect(sock, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
+			throw logic_error("connect failed");
+		step = 2;
+		f = fopen(filename, "rb+");
+		if (f == nullptr)
+			throw logic_error("file not exists");
+		step = 3;
+		fseek(f, 0, SEEK_END);
+		const int size = ftell(f);
+		fseek(f, 0, SEEK_SET);
+		char buf[BUFFER_SIZE];
+		int sum = 0, progress = 0;
+		int len;
+		do {
+			len = fread(buf,sizeof(char),BUFFER_SIZE,f);
+			send(sock,buf,len,0);
+			if ((sum += len) * 80 / size > progress) {
+				while (sum * 80 / size > progress++)
+					printf("=");
+				progress --;
+			}
+		} while(len >= BUFFER_SIZE);
+	} catch (...) {
+		eptr = current_exception();
+	}
+	switch (step) {
+		case 3:
+			fclose(f);
+		case 2:
+			shutdown(sock, SD_SEND);
+		case 1:
+			closesocket(sock);
+		default:break;
+	}
+	if (eptr)
+		rethrow_exception(eptr);
 }
