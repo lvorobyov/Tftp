@@ -108,7 +108,7 @@ void discover(DWORD timeout, vector<in_addr> &peers) {
     char buf[BUFFER_SIZE];
     strcpy(buf, BROADCAST);
     server.sin_port = htons(TFTP_PORT);
-    server.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    server.sin_addr.s_addr = htonl(INADDR_BROADCAST);
     if (sendto(sock, buf, 1, 0, (sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
         throw logic_error("send failed");
     int length = sizeof(server);
