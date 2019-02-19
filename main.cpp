@@ -8,23 +8,23 @@ using namespace std;
 #include <cxxopts.hpp>
 using namespace cxxopts;
 
-#define TFTP_PORT 8969
+#define TFTP_PORT ((WORD)8969)
 
 #define BUFFER_SIZE 512
 
 #define BROADCAST "Broadcast"
 
-void discover(DWORD timeout, vector<in_addr> &peers);
+void discover(DWORD timeout, WORD port, vector<sockaddr_in> &peers);
 
 class transfer {
 private:
-    in_addr peer;
+    sockaddr_in peer;
     int step = 0;
     SOCKET sock = INVALID_SOCKET;
     FILE *f = nullptr;
 
 public:
-    explicit transfer(const in_addr &peer) : peer(peer) {}
+    explicit transfer(const sockaddr_in &peer) : peer(peer) {}
 
     virtual ~transfer() noexcept;
 
@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
     Options options(argv[0], "Transfer file client 1.0");
     options.add_options()
             ("r,host", "receiver host", value<string>())
+            ("p,port", "receiver port", value<WORD>())
             ("t,timeout", "discover delay timeout", value<DWORD>())
             ("h,help", "show this help");
     auto result = options.parse(argc,argv);
@@ -47,22 +48,25 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     DWORD timeout = result.count("t")? result["t"].as<DWORD>() : 500;
-    in_addr peer{0};
+    sockaddr_in peer{0};
     int status = EXIT_SUCCESS;
     try {
+        auto port = result.count("port")? result["port"].as<WORD>() : TFTP_PORT;
         if (result.count("host")) {
             addrinfo hints{0};
             hints.ai_family = AF_INET;
             hints.ai_socktype = SOCK_STREAM;
             hints.ai_protocol = IPPROTO_TCP;
             addrinfo *pai;
-            if (getaddrinfo(result["host"].as<string>().c_str(), "8969", &hints, &pai) == SOCKET_ERROR)
+            char str_port[6];
+            itoa(port, str_port, 10);
+            if (getaddrinfo(result["host"].as<string>().c_str(), str_port, &hints, &pai) == SOCKET_ERROR)
                 throw logic_error("get host info failed");
             if (pai != nullptr)
-                peer = ((sockaddr_in*)pai->ai_addr)->sin_addr;
+                peer = *((sockaddr_in*)pai->ai_addr);
         } else {
-            vector<in_addr> peers;
-            discover(timeout, peers);
+            vector<sockaddr_in> peers;
+            discover(timeout, port, peers);
             if (peers.size() > 1) {
                 int index;
                 printf("You choice: ");
@@ -73,7 +77,7 @@ int main(int argc, char* argv[]) {
                 peer = peers[0];
             }
         }
-        if (peer.s_addr != 0) {
+        if (peer.sin_addr.s_addr != 0) {
             transfer tftp(peer);
             for (int i = 1; i < argc; ++i) {
                 if (argv[i][0] == '-') {
@@ -91,7 +95,7 @@ int main(int argc, char* argv[]) {
     return status;
 }
 
-void discover(DWORD timeout, vector<in_addr> &peers) {
+void discover(DWORD timeout, WORD port, vector<sockaddr_in> &peers) {
     SOCKET sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock == INVALID_SOCKET)
         throw logic_error("socket failed");
@@ -107,7 +111,7 @@ void discover(DWORD timeout, vector<in_addr> &peers) {
         throw logic_error("set timeout failed");
     char buf[BUFFER_SIZE];
     strcpy(buf, BROADCAST);
-    server.sin_port = htons(TFTP_PORT);
+    server.sin_port = htons(port);
     server.sin_addr.s_addr = htonl(INADDR_BROADCAST);
     if (sendto(sock, buf, 1, 0, (sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
         throw logic_error("send failed");
@@ -122,7 +126,7 @@ void discover(DWORD timeout, vector<in_addr> &peers) {
         buf[n] = '\0';
         const auto& s = server.sin_addr;
         printf("%s %d.%d.%d.%d\n", buf, s.s_net, s.s_host, s.s_lh, s.s_impno);
-        peers.push_back(s);
+        peers.push_back(server);
     } while (true);
     closesocket(sock);
 }
@@ -132,10 +136,7 @@ void transfer::send(const char *filename) {
     if (sock == INVALID_SOCKET)
         throw logic_error("socket error");
     step = 1;
-    sockaddr_in addr {PF_INET};
-    addr.sin_port = htons(TFTP_PORT);
-    addr.sin_addr = peer;
-    if (connect(sock, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
+    if (connect(sock, (sockaddr*)&peer, sizeof(peer)) == SOCKET_ERROR)
         throw logic_error("connect failed");
     step = 2;
     f = fopen(filename, "rb+");
