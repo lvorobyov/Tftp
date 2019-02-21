@@ -1,0 +1,44 @@
+@startuml
+
+class Detector {
+    + {static} detect(byte[]): MimeType
+}
+
+class MimeType {
+    + name: String
+    + extension: String
+}
+
+Detector - MimeType : detect
+Detector ..> Matcher
+
+interface Matcher
+interface TextMatcher
+abstract class RegexMatcher
+Matcher <|-- TextMatcher
+TextMatcher <|-- RegexMatcher
+interface BinaryMatcher
+Matcher <|-- BinaryMatcher
+
+class VideoMatcher
+class AudioMatcher
+class PictureMather
+
+BinaryMatcher <|.. MultimediaMatcher
+MultimediaMatcher <|-- VideoMatcher
+MultimediaMatcher <|-- AudioMatcher
+MultimediaMatcher <|-- PictureMather
+
+class XmlMatcher
+RegexMatcher <|.. XmlMatcher
+
+class HtmlMatcher
+XmlMatcher <|.. HtmlMatcher
+
+class ArchiveMatcher
+BinaryMatcher <|.. ArchiveMatcher
+
+ArchiveMatcher <|-- DocxMatcher
+ArchiveMatcher - XmlMatcher
+
+@enduml
