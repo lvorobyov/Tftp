@@ -138,6 +138,9 @@ void transfer::send(const char *filename) {
     step = 1;
     if (connect(sock, (sockaddr*)&peer, sizeof(peer)) == SOCKET_ERROR)
         throw logic_error("connect failed");
+    DWORD timeout = 3000;
+    if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout)) == SOCKET_ERROR)
+        throw logic_error("set tcp timeout failed");
     step = 2;
     f = fopen(filename, "rb+");
     if (f == nullptr)
