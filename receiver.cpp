@@ -20,7 +20,7 @@ using namespace std::chrono;
 DWORD tftp::receiver::thread_main() noexcept {
     // Listen TCP clients
     vector<shared_ptr<connection>> connections;
-    map<u_long, time_point<system_clock>> timetable;
+    map<u_long, time_point<steady_clock>> timetable;
     try {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock == INVALID_SOCKET)
@@ -49,7 +49,7 @@ DWORD tftp::receiver::thread_main() noexcept {
             SOCKET client = accept(sock, (sockaddr*)&addr, &addr_len);
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
-            auto tm = system_clock::now();
+            auto tm = steady_clock::now();
             auto ls = timetable.find(addr.sin_addr.s_addr);
             if (ls != timetable.end() && tm < ls->second + TIME_TOLERANCE) {
                 closesocket(client);
