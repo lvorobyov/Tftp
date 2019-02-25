@@ -9,20 +9,24 @@
 #include <stdexcept>
 #include <iostream>
 #include <memory>
+#include <unordered_map>
+#include <ctime>
 
+#define TIME_TOLERANCE 1000
 using namespace std;
 
 DWORD tftp::receiver::thread_main() noexcept {
     // Listen TCP clients
     vector<shared_ptr<connection>> connections;
+    unordered_map<u_long, time_t> timetable;
     try {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock == INVALID_SOCKET)
             throw logic_error("socket fail");
-        sockaddr_in addr{PF_INET};
-        addr.sin_port = htons(LISTEN_PORT);
-        addr.sin_addr.s_addr = htonl(INADDR_ANY);
-        if (bind(sock, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
+        sockaddr_in serv{PF_INET};
+        serv.sin_port = htons(LISTEN_PORT);
+        serv.sin_addr.s_addr = htonl(INADDR_ANY);
+        if (bind(sock, (sockaddr*)&serv, sizeof(serv)) == SOCKET_ERROR)
             throw logic_error("bind failed");
         if (listen(sock, SOMAXCONN) == SOCKET_ERROR)
             throw logic_error("listen error");
@@ -38,9 +42,18 @@ DWORD tftp::receiver::thread_main() noexcept {
                 throw logic_error("select error");
             if (s == 0)
                 continue;
-            SOCKET client = accept(sock, nullptr, nullptr);
+            sockaddr_in addr{ PF_INET };
+            int addr_len = sizeof(addr);
+            SOCKET client = accept(sock, (sockaddr*)&addr, &addr_len);
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
+            auto tm = time(nullptr);
+            auto ls = timetable.find(addr.sin_addr.s_addr);
+            if (ls != timetable.end() && tm < ls->second + TIME_TOLERANCE) {
+                closesocket(client);
+                continue;
+            }
+            timetable[addr.sin_addr.s_addr] = tm;
             auto conn = make_shared<connection>(client);
             conn->start();
             connections.push_back(conn);
