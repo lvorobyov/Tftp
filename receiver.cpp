@@ -9,16 +9,18 @@
 #include <stdexcept>
 #include <iostream>
 #include <memory>
-#include <unordered_map>
-#include <ctime>
+#include <map>
+#include <chrono>
 
-#define TIME_TOLERANCE 1000
 using namespace std;
+using namespace std::chrono;
+
+#define TIME_TOLERANCE milliseconds(1000)
 
 DWORD tftp::receiver::thread_main() noexcept {
     // Listen TCP clients
     vector<shared_ptr<connection>> connections;
-    unordered_map<u_long, time_t> timetable;
+    map<u_long, time_point<system_clock>> timetable;
     try {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock == INVALID_SOCKET)
@@ -47,7 +49,7 @@ DWORD tftp::receiver::thread_main() noexcept {
             SOCKET client = accept(sock, (sockaddr*)&addr, &addr_len);
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
-            auto tm = time(nullptr);
+            auto tm = system_clock::now();
             auto ls = timetable.find(addr.sin_addr.s_addr);
             if (ls != timetable.end() && tm < ls->second + TIME_TOLERANCE) {
                 closesocket(client);
