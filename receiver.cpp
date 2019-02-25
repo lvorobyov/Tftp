@@ -4,13 +4,11 @@
 
 #include "socket.h"
 #include "receiver.h"
-#include "connection.h"
-#include <vector>
 #include <stdexcept>
 #include <iostream>
-#include <memory>
 #include <map>
 #include <chrono>
+#include <algorithm>
 
 using namespace std;
 using namespace std::chrono;
@@ -50,13 +48,14 @@ DWORD tftp::receiver::thread_main() noexcept {
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
             auto tm = steady_clock::now();
-            auto ls = timetable.find(addr.sin_addr.s_addr);
-            if (ls != timetable.end() && tm < ls->second + TIME_TOLERANCE) {
+            auto key = addr.sin_addr.s_addr;
+            auto ls = timetable.find(key);
+            if (ls != timetable.end() && tm < ls->second + TIME_TOLERANCE && !accomplish(connections, key)) {
                 closesocket(client);
                 continue;
             }
-            timetable[addr.sin_addr.s_addr] = tm;
-            auto conn = make_shared<connection>(client);
+            timetable[key] = tm;
+            auto conn = make_shared<connection>(client,addr.sin_addr);
             conn->start();
             connections.push_back(conn);
         } while (active);
@@ -74,4 +73,14 @@ tftp::receiver::~receiver() {
 
 void tftp::receiver::stop() noexcept {
     active = false;
+}
+
+bool tftp::receiver::accomplish(const vector<shared_ptr<connection>> &connections, u_long key) {
+    for (const auto &conn: connections) {
+        if (conn->get_addr().s_addr == key) {
+            if (! conn->wait(0))
+                return false;
+        }
+    }
+    return true;
 }

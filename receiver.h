@@ -9,6 +9,10 @@
 
 #include <win32/thread.h>
 
+#include "connection.h"
+#include <vector>
+#include <memory>
+
 namespace tftp {
 
     using namespace csoi::win32;
@@ -26,6 +30,8 @@ namespace tftp {
         DWORD thread_main() noexcept override;
 
         bool active = true;
+
+        bool accomplish(const std::vector<std::shared_ptr<connection>> &connections, u_long key);
     };
 
 }

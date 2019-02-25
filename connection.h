@@ -15,9 +15,12 @@ namespace tftp {
     class connection : public thread<connection> {
     protected:
         SOCKET sock;
+        in_addr addr;
 
     public:
-        explicit connection(SOCKET sock);
+        explicit connection(SOCKET sock, in_addr addr);
+
+        const in_addr &get_addr() const;
 
         ~connection() override;
 
