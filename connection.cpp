@@ -8,7 +8,7 @@
 
 #define BUFFER_SIZE 512
 
-tftp::connection::connection(SOCKET sock) : sock(sock) {}
+tftp::connection::connection(SOCKET sock, in_addr addr) : sock(sock), addr(addr) {}
 
 DWORD tftp::connection::thread_main() noexcept {
     // Download file
@@ -27,4 +27,8 @@ DWORD tftp::connection::thread_main() noexcept {
 
 tftp::connection::~connection() {
     closesocket(sock);
+}
+
+const in_addr &tftp::connection::get_addr() const {
+    return addr;
 }

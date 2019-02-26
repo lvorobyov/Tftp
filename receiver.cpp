@@ -4,8 +4,6 @@
 
 #include "socket.h"
 #include "receiver.h"
-#include "connection.h"
-#include <vector>
 #include <stdexcept>
 #include <iostream>
 #include <memory>
@@ -21,10 +19,10 @@ DWORD tftp::receiver::thread_main() noexcept {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock == INVALID_SOCKET)
             throw logic_error("socket fail");
-        sockaddr_in addr{PF_INET};
-        addr.sin_port = htons(LISTEN_PORT);
-        addr.sin_addr.s_addr = htonl(INADDR_ANY);
-        if (bind(sock, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
+        sockaddr_in serv{PF_INET};
+        serv.sin_port = htons(LISTEN_PORT);
+        serv.sin_addr.s_addr = htonl(INADDR_ANY);
+        if (bind(sock, (sockaddr*)&serv, sizeof(serv)) == SOCKET_ERROR)
             throw logic_error("bind failed");
         if (listen(sock, SOMAXCONN) == SOCKET_ERROR)
             throw logic_error("listen error");
@@ -41,12 +39,14 @@ DWORD tftp::receiver::thread_main() noexcept {
                 throw logic_error("select error");
             if (s == 0)
                 continue;
-            SOCKET client = accept(sock, nullptr, nullptr);
+            sockaddr_in addr{ PF_INET };
+            int addr_len = sizeof(addr);
+            SOCKET client = accept(sock, (sockaddr*)&addr, &addr_len);
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
 			time(&tm);
 			LOG_INFO << asctime(localtime(&tm)) << " accepted " << endl;
-            auto conn = make_shared<connection>(client);
+            auto conn = make_shared<connection>(client,addr.sin_addr);
             conn->start();
             connections.push_back(conn);
         } while (active);
