@@ -10,12 +10,14 @@
 
 #include "socket.h"
 #include "receiver.h"
+#include "scheduler.h"
 
 using namespace std;
 
 DWORD tftp::receiver::thread_main() noexcept {
     // Listen TCP clients
-    vector<shared_ptr<connection>> connections;
+    scheduler<connection> connections;
+    connections.start();
     try {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock == INVALID_SOCKET)
@@ -50,14 +52,13 @@ DWORD tftp::receiver::thread_main() noexcept {
             inet_ntop(AF_INET, &addr.sin_addr, str_addr, INET_ADDRSTRLEN);
 			LOG_INFO << asctime(localtime(&tm)) << " accepted " << str_addr;
             auto conn = make_shared<connection>(client,addr.sin_addr);
-            conn->start();
-            connections.push_back(conn);
+            connections.execute(conn);
         } while (active);
+        connections.shutdown();
+        connections.wait();
     } catch (logic_error const& ex) {
         cerr << ex.what() << " code " << WSAGetLastError() << endl;
     }
-    for (auto& c: connections)
-	    c->wait();
     return 0;
 }
 
