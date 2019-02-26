@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.12)
 project(Tftp)
 
 list(APPEND CMAKE_MODULE_PATH "$ENV{WORK}/cmake")
