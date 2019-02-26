@@ -29,6 +29,7 @@ DWORD tftp::receiver::thread_main() noexcept {
             throw logic_error("bind failed");
         if (listen(sock, SOMAXCONN) == SOCKET_ERROR)
             throw logic_error("listen error");
+        LOGD << "listen started";
         u_long mode = 0;
         ioctlsocket(sock, FIONBIO, &mode);
         fd_set fds;
@@ -50,7 +51,7 @@ DWORD tftp::receiver::thread_main() noexcept {
                 throw logic_error("accept failed");
 			time(&tm);
             inet_ntop(AF_INET, &addr.sin_addr, str_addr, INET_ADDRSTRLEN);
-			LOG_INFO << asctime(localtime(&tm)) << " accepted " << str_addr;
+			LOG_INFO << "accepted " << str_addr;
             auto conn = make_shared<connection>(client,addr.sin_addr);
             connections.execute(conn);
         } while (active);
@@ -63,6 +64,7 @@ DWORD tftp::receiver::thread_main() noexcept {
 }
 
 tftp::receiver::~receiver() {
+    LOGD << "listen closed";
     closesocket(sock);
 }
 
