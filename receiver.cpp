@@ -2,13 +2,14 @@
 // Created by Lev on 13.02.2019.
 //
 
-#include "socket.h"
-#include "receiver.h"
 #include <stdexcept>
 #include <iostream>
 #include <memory>
 #include <ctime>
 #include <plog/Log.h>
+
+#include "socket.h"
+#include "receiver.h"
 
 using namespace std;
 

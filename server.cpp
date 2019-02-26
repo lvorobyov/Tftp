@@ -6,11 +6,11 @@
 #include <cstdint>
 #include <csignal>
 #include <unistd.h>
-#include "socket.h"
-#include <stdexcept>
 #include <plog/Log.h>
+#include <stdexcept>
 using namespace std;
 
+#include "socket.h"
 #include "receiver.h"
 using namespace tftp;
 
