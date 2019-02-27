@@ -49,7 +49,9 @@ DWORD tftp::receiver::thread_main() noexcept {
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
             time(&tm);
-            fprintf(log, "%s accepted %s", asctime(localtime(&tm)), inet_ntoa(addr.sin_addr));
+            char *str_time = asctime(localtime(&tm));
+            str_time[strlen(str_time)-1] = '\0';
+            fprintf(log, "%s accepted %s\n", str_time, inet_ntoa(addr.sin_addr));
             auto conn = make_shared<connection>(client,addr.sin_addr);
             connections.execute(conn);
         } while (active);
