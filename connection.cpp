@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <ctime>
 
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 2048
 
 tftp::connection::connection(SOCKET sock, in_addr addr) : sock(sock), addr(addr) {}
 

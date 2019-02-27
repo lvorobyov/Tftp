@@ -10,9 +10,7 @@ using namespace cxxopts;
 
 #define TFTP_PORT ((WORD)8969)
 
-#define BUFFER_SIZE 512
-
-#define BROADCAST "Broadcast"
+#define BUFFER_SIZE 2048
 
 void discover(DWORD timeout, WORD port, vector<sockaddr_in> &peers);
 
