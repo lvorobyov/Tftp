@@ -6,7 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <ctime>
-#include <plog/Log.h>
+#include <cstdio>
 
 #include "socket.h"
 #include "receiver.h"
@@ -16,6 +16,7 @@ using namespace std;
 
 DWORD tftp::receiver::thread_main() noexcept {
     // Listen TCP clients
+    FILE *log = fopen("tftps.log", "a+");
     scheduler<connection> connections;
     connections.start();
     try {
@@ -29,7 +30,6 @@ DWORD tftp::receiver::thread_main() noexcept {
             throw logic_error("bind failed");
         if (listen(sock, SOMAXCONN) == SOCKET_ERROR)
             throw logic_error("listen error");
-        LOGD << "listen started";
         u_long mode = 0;
         ioctlsocket(sock, FIONBIO, &mode);
         fd_set fds;
@@ -49,7 +49,7 @@ DWORD tftp::receiver::thread_main() noexcept {
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
             time(&tm);
-            LOG_INFO << "accepted " << inet_ntoa(addr.sin_addr);
+            fprintf(log, "%s accepted %s", asctime(localtime(&tm)), inet_ntoa(addr.sin_addr));
             auto conn = make_shared<connection>(client,addr.sin_addr);
             connections.execute(conn);
         } while (active);
@@ -58,11 +58,11 @@ DWORD tftp::receiver::thread_main() noexcept {
     } catch (logic_error const& ex) {
         cerr << ex.what() << " code " << WSAGetLastError() << endl;
     }
+    fclose(log);
     return 0;
 }
 
 tftp::receiver::~receiver() {
-    LOGD << "listen closed";
     closesocket(sock);
 }
 
