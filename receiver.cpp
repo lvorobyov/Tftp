@@ -33,8 +33,7 @@ DWORD tftp::receiver::thread_main() noexcept {
         u_long mode = 0;
         ioctlsocket(sock, FIONBIO, &mode);
         fd_set fds;
-		time_t tm;
-		char str_addr[INET_ADDRSTRLEN];
+        time_t tm;
         do {
             FD_ZERO(&fds);
             FD_SET(sock, &fds);
@@ -49,9 +48,8 @@ DWORD tftp::receiver::thread_main() noexcept {
             SOCKET client = accept(sock, (sockaddr*)&addr, &addr_len);
             if (client == INVALID_SOCKET)
                 throw logic_error("accept failed");
-			time(&tm);
-            inet_ntop(AF_INET, &addr.sin_addr, str_addr, INET_ADDRSTRLEN);
-			LOG_INFO << "accepted " << str_addr;
+            time(&tm);
+            LOG_INFO << "accepted " << inet_ntoa(addr.sin_addr);
             auto conn = make_shared<connection>(client,addr.sin_addr);
             connections.execute(conn);
         } while (active);
