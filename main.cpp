@@ -12,6 +12,8 @@ using namespace cxxopts;
 
 #define BUFFER_SIZE 2048
 
+#define BROADCAST "Broadcast"
+
 void discover(DWORD timeout, WORD port, vector<sockaddr_in> &peers);
 
 class transfer {
