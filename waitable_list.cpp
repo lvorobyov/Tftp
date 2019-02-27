@@ -6,9 +6,9 @@
 #include <vector>
 using namespace tftp;
 
-tftp::waitable_list::waitable_list(const initializer_list<reference_wrapper<object>> &init) {
+tftp::waitable_list::waitable_list(const initializer_list<object*> &init) {
     for (auto &i: init) {
-        m_handles.push_back(i.get().raw_handle());
+        m_handles.push_back(i->raw_handle());
     }
 }
 

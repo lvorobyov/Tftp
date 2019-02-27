@@ -7,7 +7,6 @@
 
 #include <win32/object.h>
 #include <initializer_list>
-#include <functional>
 #include <list>
 
 namespace tftp {
@@ -20,7 +19,7 @@ namespace tftp {
         list<HANDLE> m_handles;
 
     public:
-        waitable_list(initializer_list<reference_wrapper<object>> const& init);
+        waitable_list(initializer_list<object*> const& init);
 
         DWORD wait(bool all, DWORD timeout = INFINITE);
 

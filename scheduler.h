@@ -46,7 +46,7 @@ namespace tftp {
 
     template<typename T>
     DWORD scheduler<T>::thread_main() noexcept {
-        waitable_list events({e_shutdown,e_incoming});
+        waitable_list events({&e_shutdown,&e_incoming});
         DWORD index = 0;
         try {
             while ((index = events.wait(false)) != 0) {
