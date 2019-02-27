@@ -10,7 +10,7 @@ using namespace cxxopts;
 
 #define TFTP_PORT ((WORD)8969)
 
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 512
 
 #define BROADCAST "Broadcast"
 
