@@ -8,8 +8,8 @@
 #include <win32/thread.h>
 #include <win32/event.h>
 #include <win32/waitable.h>
+#include <win32/safe_queue.h>
 #include <forward_list>
-#include <vector>
 
 namespace tftp {
 
@@ -21,7 +21,7 @@ namespace tftp {
     private:
         event e_incoming;
         event e_shutdown;
-        vector<T*> runners;
+        safe_queue<T*> runners;
 
     public:
         void execute(T* runner);
@@ -34,7 +34,7 @@ namespace tftp {
 
     template<typename T>
     void scheduler<T>::execute(T* runner) {
-        runners.push_back(runner);
+        runners.push(runner);
         e_incoming.set();
     }
 
@@ -52,10 +52,12 @@ namespace tftp {
                 if (o == &e_shutdown) {
                     break;
                 } else if (o == &e_incoming) {
-                    auto thread = runners.back();
-                    runners.pop_back();
-                    thread->start();
-                    events.push_front(thread);
+                    do {
+                        auto thread = runners.front();
+                        runners.pop();
+                        thread->start();
+                        events.push_front(thread);
+                    } while (! runners.empty());
                 } else {
                     // handle thread finish
                     events.remove(o);
