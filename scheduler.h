@@ -7,10 +7,9 @@
 
 #include <win32/thread.h>
 #include <win32/event.h>
+#include <win32/waitable.h>
+#include <forward_list>
 #include <vector>
-#include <memory>
-
-#include "waitable_list.h"
 
 namespace tftp {
 
@@ -22,10 +21,10 @@ namespace tftp {
     private:
         event e_incoming;
         event e_shutdown;
-        vector<shared_ptr<T>> runners;
+        vector<T*> runners;
 
     public:
-        void execute(shared_ptr<T> & runner);
+        void execute(T* runner);
 
         void shutdown();
 
@@ -34,7 +33,7 @@ namespace tftp {
     };
 
     template<typename T>
-    void scheduler<T>::execute(shared_ptr<T> &runner) {
+    void scheduler<T>::execute(T* runner) {
         runners.push_back(runner);
         e_incoming.set();
     }
@@ -46,27 +45,35 @@ namespace tftp {
 
     template<typename T>
     DWORD scheduler<T>::thread_main() noexcept {
-        waitable_list events({&e_shutdown,&e_incoming});
-        DWORD index = 0;
+        DWORD status = 0;
+        forward_list<object*> events({&e_shutdown,&e_incoming});
         try {
-            while ((index = events.wait(false)) != 0) {
-                if (index == 1) {
-                    auto &thread = *runners.back().get();
-                    thread.start();
-                    events.add(thread);
+            while (auto o = wait_any(events.begin(), events.end())) {
+                if (o == &e_shutdown) {
+                    break;
+                } else if (o == &e_incoming) {
+                    auto thread = runners.back();
+                    runners.pop_back();
+                    thread->start();
+                    events.push_front(thread);
                 } else {
                     // handle thread finish
-                    events.remove(*runners[index - 2]);
-                    runners.erase(runners.begin() + index - 2);
+                    events.remove(o);
+                    delete o;
                 }
             }
-            events.remove(e_shutdown);
-            events.remove(e_incoming);
-            events.wait(true);
         } catch (exception const& ex) {
             cerr << ex.what() << endl;
+            status = 1;
         }
-        return 0;
+        events.reverse();
+        auto it = events.begin();
+        advance(it, 2);
+        wait_all(it, events.end());
+        for_each(it, events.end(), [](auto i) {
+            delete i;
+        });
+        return status;
     }
 
 }

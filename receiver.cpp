@@ -4,7 +4,6 @@
 
 #include <stdexcept>
 #include <iostream>
-#include <memory>
 #include <ctime>
 #include <cstdio>
 
@@ -52,8 +51,7 @@ DWORD tftp::receiver::thread_main() noexcept {
             char *str_time = asctime(localtime(&tm));
             str_time[strlen(str_time)-1] = '\0';
             fprintf(log, "%s accepted %s\n", str_time, inet_ntoa(addr.sin_addr));
-            auto conn = make_shared<connection>(client,addr.sin_addr);
-            connections.execute(conn);
+            connections.execute(new connection(client,addr.sin_addr));
         } while (active);
         connections.shutdown();
         connections.wait();
