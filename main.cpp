@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
                 tftp.send(argv[i]);
             }
         }
-    } catch (logic_error const& ex) {
+    } catch (exception const& ex) {
         fprintf(stderr, "%s\n", ex.what());
         status = EXIT_FAILURE;
     }
@@ -144,7 +144,7 @@ void transfer::send(const char *filename) {
     step = 2;
     f = fopen(filename, "rb+");
     if (f == nullptr)
-        throw logic_error("file not exists");
+        throw system_error(errno,system_category(),"file open failed");
     step = 3;
     fseek(f, 0, SEEK_END);
     const int size = ftell(f);
