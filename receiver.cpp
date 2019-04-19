@@ -60,8 +60,8 @@ DWORD tftp::receiver::thread_main() noexcept {
                         auto b = connections.begin();
                         auto d = distance(b, it);
                         connections.erase(it);
-                        advance(b,d);
-                        it = b;
+                        it = connections.begin();
+                        advance(it,d);
                         continue;
                     }
                     s --;
