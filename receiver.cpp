@@ -54,6 +54,7 @@ DWORD tftp::receiver::thread_main() noexcept {
             auto it = connections.begin();
             while (s > 0 && it != connections.end()) {
                 if (FD_ISSET(it->get_sock(), &sss)) {
+                    s --;
                     primary.switch_to(*it);
                     if (! it->is_active()) {
                         FD_CLR(it->get_sock(), &fds);
@@ -64,7 +65,6 @@ DWORD tftp::receiver::thread_main() noexcept {
                         advance(it,d);
                         continue;
                     }
-                    s --;
                 }
                 it++;
             }
