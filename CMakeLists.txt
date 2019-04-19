@@ -11,7 +11,7 @@ add_definitions(-D_UNICODE -DUNICODE)
 
 link_libraries(ws2_32)
 add_executable(tftp main.cpp)
-add_executable(tftps server.cpp receiver.cpp connection.cpp)
+add_executable(tftps server.cpp receiver.cpp connection.cpp writer.cpp)
 add_executable(tftp_gui WIN32 send_dialog.cpp send_dialog.h
         detector.cpp tftp.rc resource.h)
 target_link_libraries(tftp_gui comctl32)
