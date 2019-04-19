@@ -7,6 +7,7 @@
 
 #include "socket.h"
 #include <win32/fiber.h>
+#include <win32/event.h>
 
 namespace tftp {
 
@@ -18,6 +19,7 @@ namespace tftp {
         in_addr addr;
         fiber_primary &owner;
         bool active = true;
+        event received{false};
 
     public:
         explicit connection(SOCKET sock, in_addr addr, fiber_primary &owner);
@@ -27,6 +29,8 @@ namespace tftp {
         const in_addr &get_addr() const;
 
         bool is_active() const;
+
+        const event &get_received() const;
 
         ~connection() override;
 

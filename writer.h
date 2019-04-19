@@ -12,10 +12,32 @@ namespace tftp {
 
     using namespace csoi::win32;
 
-    class writer : public thread<writer> {
+    template <template <typename> class Container>
+    class writer : public thread<writer<Container>> {
+    private:
+        Container<connection> &connections;
+
+    public:
+        explicit writer(Container<connection> &connections);
+
     protected:
         DWORD thread_main() noexcept override;
     };
+
+    template<template <typename> class Container>
+    writer<Container>::writer(Container<connection> &connections) : connections(connections) { }
+
+    template<template <typename> class Container>
+    inline DWORD tftp::writer<Container>::thread_main() noexcept {
+        try {
+            fiber_primary primary;
+            // Wait any received data
+            // Write data into file
+        } catch (exception const& ex) {
+            return 1;
+        }
+        return 0;
+    }
 
 }
 

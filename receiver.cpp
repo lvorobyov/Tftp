@@ -9,12 +9,14 @@
 
 #include "socket.h"
 #include "receiver.h"
+#include "writer.h"
 
 using namespace std;
 
 DWORD tftp::receiver::thread_main() noexcept {
     // Listen TCP clients
     list<connection> connections;
+    writer<list> assistant(connections);
     fiber_primary primary;
     try {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);

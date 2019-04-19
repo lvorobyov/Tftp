@@ -42,3 +42,7 @@ bool tftp::connection::is_active() const {
 SOCKET tftp::connection::get_sock() const {
     return sock;
 }
+
+const csoi::win32::event &tftp::connection::get_received() const {
+    return received;
+}
