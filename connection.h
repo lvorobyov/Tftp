@@ -6,26 +6,32 @@
 #define TFTP_CONNECTION_H
 
 #include "socket.h"
-#include <win32/thread.h>
+#include <win32/fiber.h>
 
 namespace tftp {
 
     using namespace csoi::win32;
 
-    class connection : public thread<connection> {
+    class connection : public fiber {
     protected:
         SOCKET sock;
         in_addr addr;
+        fiber_primary &owner;
+        bool active = true;
 
     public:
-        explicit connection(SOCKET sock, in_addr addr);
+        explicit connection(SOCKET sock, in_addr addr, fiber_primary &owner);
+
+        SOCKET get_sock() const;
 
         const in_addr &get_addr() const;
+
+        bool is_active() const;
 
         ~connection() override;
 
     protected:
-        DWORD thread_main() noexcept override;
+        void fiber_main() noexcept override;
     };
 
 }

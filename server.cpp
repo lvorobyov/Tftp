@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <csignal>
 #include <unistd.h>
-#include <plog/Log.h>
 #include <stdexcept>
 using namespace std;
 
@@ -38,7 +37,6 @@ protected:
 };
 
 int main(int argc, char* argv[]) {
-	plog::init(plog::info, "tftps.log");
     tftps server;
 	try {
 		server.start();

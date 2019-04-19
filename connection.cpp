@@ -8,9 +8,9 @@
 
 #define BUFFER_SIZE 512
 
-tftp::connection::connection(SOCKET sock, in_addr addr) : sock(sock), addr(addr) {}
+tftp::connection::connection(SOCKET sock, in_addr addr, fiber_primary &owner) : sock(sock), addr(addr), owner(owner) {}
 
-DWORD tftp::connection::thread_main() noexcept {
+void tftp::connection::fiber_main() noexcept {
     // Download file
     time_t t = time(nullptr);
     char filename[MAX_PATH];
@@ -20,9 +20,11 @@ DWORD tftp::connection::thread_main() noexcept {
     int len;
     while((len = recv(sock, buf, BUFFER_SIZE, 0)) != 0) {
         fwrite(buf, sizeof(char), static_cast<size_t>(len), f);
+        switch_to(owner);
     }
     fclose(f);
-    return 0;
+    active = false;
+    switch_to(owner);
 }
 
 tftp::connection::~connection() {
@@ -31,4 +33,12 @@ tftp::connection::~connection() {
 
 const in_addr &tftp::connection::get_addr() const {
     return addr;
+}
+
+bool tftp::connection::is_active() const {
+    return active;
+}
+
+SOCKET tftp::connection::get_sock() const {
+    return sock;
 }

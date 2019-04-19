@@ -4,9 +4,8 @@
 
 #include <stdexcept>
 #include <iostream>
-#include <memory>
 #include <ctime>
-#include <plog/Log.h>
+#include <list>
 
 #include "socket.h"
 #include "receiver.h"
@@ -15,7 +14,8 @@ using namespace std;
 
 DWORD tftp::receiver::thread_main() noexcept {
     // Listen TCP clients
-    vector<shared_ptr<connection>> connections;
+    list<connection> connections;
+    fiber_primary primary;
     try {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock == INVALID_SOCKET)
@@ -29,33 +29,49 @@ DWORD tftp::receiver::thread_main() noexcept {
             throw logic_error("listen error");
         u_long mode = 0;
         ioctlsocket(sock, FIONBIO, &mode);
-        fd_set fds;
-		time_t tm;
+        fd_set fds, sss{};
+        FD_ZERO(&fds);
+        FD_SET(sock, &fds);
+        TIMEVAL timeout{0,500};
         do {
-            FD_ZERO(&fds);
-            FD_SET(sock, &fds);
-            TIMEVAL timeout{0,500};
-            int s = select(0, &fds, nullptr, nullptr, &timeout);
+            sss = fds;
+            int s = select(0, &sss, nullptr, nullptr, &timeout);
             if (s == SOCKET_ERROR)
                 throw logic_error("select error");
             if (s == 0)
                 continue;
-            sockaddr_in addr{ PF_INET };
-            int addr_len = sizeof(addr);
-            SOCKET client = accept(sock, (sockaddr*)&addr, &addr_len);
-            if (client == INVALID_SOCKET)
-                throw logic_error("accept failed");
-			time(&tm);
-			LOG_INFO << asctime(localtime(&tm)) << " accepted " << endl;
-            auto conn = make_shared<connection>(client,addr.sin_addr);
-            conn->start();
-            connections.push_back(conn);
+            if (FD_ISSET(sock, &sss)) {
+                sockaddr_in addr{ PF_INET };
+                int addr_len = sizeof(addr);
+                SOCKET client = accept(sock, (sockaddr*)&addr, &addr_len);
+                if (client == INVALID_SOCKET)
+                    throw logic_error("accept failed");
+                ioctlsocket(client, FIONBIO, &mode);
+                connections.emplace_back(client,addr.sin_addr,primary);
+                FD_SET(client, &fds);
+                s --;
+            }
+            auto it = connections.begin();
+            while (s > 0 && it != connections.end()) {
+                if (FD_ISSET(it->get_sock(), &sss)) {
+                    primary.switch_to(*it);
+                    if (! it->is_active()) {
+                        FD_CLR(it->get_sock(), &fds);
+                        auto b = connections.begin();
+                        auto d = distance(b, it);
+                        connections.erase(it);
+                        advance(b,d);
+                        it = b;
+                    } else {
+                        it++;
+                    }
+                    s --;
+                }
+            }
         } while (active);
     } catch (logic_error const& ex) {
         cerr << ex.what() << " code " << WSAGetLastError() << endl;
     }
-    for (auto& c: connections)
-	    c->wait();
     return 0;
 }
 

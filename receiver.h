@@ -30,8 +30,6 @@ namespace tftp {
         DWORD thread_main() noexcept override;
 
         bool active = true;
-
-        bool accomplish(const std::vector<std::shared_ptr<connection>> &connections, u_long key);
     };
 
 }
