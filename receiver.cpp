@@ -58,11 +58,7 @@ DWORD tftp::receiver::thread_main() noexcept {
                     primary.switch_to(*it);
                     if (! it->is_active()) {
                         FD_CLR(it->get_sock(), &fds);
-                        auto b = connections.begin();
-                        auto d = distance(b, it);
-                        connections.erase(it);
-                        it = connections.begin();
-                        advance(it,d);
+                        it = connections.erase(it);
                         continue;
                     }
                 }
