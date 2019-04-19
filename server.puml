@@ -1,0 +1,29 @@
+@startuml
+(*)  --> === B1 ===
+--> "receive datagram" as a1
+--> "send datagram"
+if "active"
+-->[Yes] a1
+else
+--> === B2 ===
+-->(*)
+
+=== B1 === --> "listen"
+--> "select" as s
+if "client"
+--> "accept" as a2
+else
+-->[Yes] "read data"
+--> "write data"
+endif
+--> if "active"
+--> s
+else
+--> === B2 ===
+
+a2 --> if "active"
+-->[Yes] s
+else
+--> === B2 ===
+
+@enduml
