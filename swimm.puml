@@ -1,0 +1,17 @@
+@startuml
+|Receiver|
+start
+:listen;
+repeat
+  :select;
+  if (socket type) then (server)
+    :accept;
+  else (client)
+    :receive data;
+    |Writer|
+    :write data;
+    |Receiver|
+  endif
+repeat while (active)
+stop
+@enduml
