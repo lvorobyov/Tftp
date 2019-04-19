@@ -62,11 +62,11 @@ DWORD tftp::receiver::thread_main() noexcept {
                         connections.erase(it);
                         advance(b,d);
                         it = b;
-                    } else {
-                        it++;
+                        continue;
                     }
                     s --;
                 }
+                it++;
             }
         } while (active);
     } catch (logic_error const& ex) {
