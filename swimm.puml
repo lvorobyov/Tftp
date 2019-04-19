@@ -1,6 +1,11 @@
 @startuml
-|Receiver|
 start
+fork
+repeat
+  :receive dgram;
+  :sent answer;
+repeat while (active)
+fork again
 :listen;
 repeat
   :select;
@@ -8,10 +13,9 @@ repeat
     :accept;
   else (client)
     :receive data;
-    |Writer|
     :write data;
-    |Receiver|
   endif
 repeat while (active)
+end fork
 stop
 @enduml
