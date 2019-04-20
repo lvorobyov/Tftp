@@ -39,6 +39,8 @@ namespace tftp {
 
         const mutex &get_guard() const;
 
+        void yield_from(const fiber_primary &primary);
+
         ~connection() override;
 
     protected:

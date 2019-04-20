@@ -54,9 +54,7 @@ namespace tftp {
                 } else {
                     auto fib = connections.begin();
                     advance(fib, h - 2);
-                    fib->get_guard().wait();
-                    primary.switch_to(*fib);
-                    fib->get_guard().release();
+                    fib->yield_from(primary);
                 }
             } while (true);
             // Wait any received data

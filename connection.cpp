@@ -56,3 +56,9 @@ void tftp::connection::set_auxiliary(csoi::win32::fiber_primary &auxiliary_fiber
 const csoi::win32::mutex &tftp::connection::get_guard() const {
     return guard;
 }
+
+void tftp::connection::yield_from(const fiber_primary &primary) {
+    guard.wait();
+    primary.switch_to(*this);
+    guard.release();
+}
