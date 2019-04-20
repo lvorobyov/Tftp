@@ -63,6 +63,7 @@ DWORD tftp::receiver::thread_main() noexcept {
                         it = connections.erase(it);
                         continue;
                     }
+                    it->get_received().set();
                 }
                 it++;
             }

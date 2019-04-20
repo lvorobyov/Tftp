@@ -19,8 +19,10 @@ void tftp::connection::fiber_main() noexcept {
     char buf[BUFFER_SIZE];
     int len;
     while((len = recv(sock, buf, BUFFER_SIZE, 0)) != 0) {
+        if (auxiliary)
+            switch_to(owner);
         fwrite(buf, sizeof(char), static_cast<size_t>(len), f);
-        switch_to(owner);
+        switch_to(*(auxiliary ?: &owner));
     }
     fclose(f);
     active = false;
@@ -45,4 +47,8 @@ SOCKET tftp::connection::get_sock() const {
 
 const csoi::win32::event &tftp::connection::get_received() const {
     return received;
+}
+
+void tftp::connection::set_auxiliary(csoi::win32::fiber_primary &auxiliary_fiber) {
+    this->auxiliary = &auxiliary_fiber;
 }
