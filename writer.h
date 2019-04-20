@@ -44,16 +44,16 @@ namespace tftp {
             for (auto &c: connections)
                 c.set_auxiliary(primary);
             do {
-                auto h = wait_any(handles.begin(), handles.end());
-                if (h == e_shutdown.raw_handle())
+                auto h = wait(false, handles.begin(), handles.end());
+                if (h == 0)
                     break;
-                if (h == e_update.raw_handle()) {
+                if (h == 1) {
                     handles.resize(2);
                     for (auto const &conn: connections)
                         handles.push_back(conn.get_received().raw_handle());
                 } else {
-                    auto fib = find_if(connections.begin(), connections.end(),
-                        [&] (const auto &conn) { return conn.get_received().raw_handle() == h; });
+                    auto fib = connections.begin();
+                    advance(fib, h - 2);
                     fib->get_guard().wait();
                     primary.switch_to(*fib);
                     fib->get_guard().release();
