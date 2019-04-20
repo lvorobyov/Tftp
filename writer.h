@@ -75,6 +75,7 @@ namespace tftp {
     template<template <typename> class Container>
     void writer<Container>::stop() {
         e_shutdown.set();
+        thread<writer>::wait();
     }
 
 }

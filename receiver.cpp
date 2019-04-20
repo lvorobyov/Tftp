@@ -11,6 +11,7 @@
 #include "receiver.h"
 #include "writer.h"
 
+#include <mingw.thread.h>
 using namespace std;
 
 DWORD tftp::receiver::thread_main() noexcept {
@@ -18,7 +19,10 @@ DWORD tftp::receiver::thread_main() noexcept {
     list<connection> connections;
     writer<list> assistant(connections);
     fiber_primary primary;
+    auto cores = std::thread::hardware_concurrency();
     try {
+        if (cores > 1)
+            assistant.start();
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock == INVALID_SOCKET)
             throw logic_error("socket fail");
@@ -73,6 +77,8 @@ DWORD tftp::receiver::thread_main() noexcept {
     } catch (logic_error const& ex) {
         cerr << ex.what() << " code " << WSAGetLastError() << endl;
     }
+    if (cores > 1)
+        assistant.stop();
     return 0;
 }
 
