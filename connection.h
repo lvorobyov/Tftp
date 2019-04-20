@@ -8,6 +8,7 @@
 #include "socket.h"
 #include <win32/fiber.h>
 #include <win32/event.h>
+#include <win32/mutex.h>
 
 namespace tftp {
 
@@ -21,6 +22,7 @@ namespace tftp {
         fiber_primary *auxiliary = nullptr;
         bool active = true;
         event received{false};
+        mutex guard;
 
     public:
         explicit connection(SOCKET sock, in_addr addr, fiber_primary &owner);
@@ -34,6 +36,8 @@ namespace tftp {
         void set_auxiliary(fiber_primary &auxiliary_fiber);
 
         const event &get_received() const;
+
+        const mutex &get_guard() const;
 
         ~connection() override;
 

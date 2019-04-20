@@ -54,7 +54,9 @@ namespace tftp {
                 } else {
                     auto fib = find_if(connections.begin(), connections.end(),
                         [&] (const auto &conn) { return conn.get_received().raw_handle() == h; });
+                    fib->get_guard().wait();
                     primary.switch_to(*fib);
+                    fib->get_guard().release();
                 }
             } while (true);
             // Wait any received data

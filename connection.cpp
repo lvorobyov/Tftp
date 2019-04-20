@@ -52,3 +52,7 @@ const csoi::win32::event &tftp::connection::get_received() const {
 void tftp::connection::set_auxiliary(csoi::win32::fiber_primary &auxiliary_fiber) {
     this->auxiliary = &auxiliary_fiber;
 }
+
+const csoi::win32::mutex &tftp::connection::get_guard() const {
+    return guard;
+}
