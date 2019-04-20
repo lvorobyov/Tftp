@@ -16,8 +16,9 @@ void tftp::connection::fiber_main() noexcept {
     time_t t = time(nullptr);
     static random_device rd;
     static mt19937 mt(t + rd());
+    static uniform_int_distribution uid(1000,9999);
     char filename[MAX_PATH];
-    sprintf_s(filename, MAX_PATH, "downloaded_%d_%d.mp4", t, mt());
+    sprintf_s(filename, MAX_PATH, "downloaded_%d_%d.mp4", t, uid(mt));
     FILE *f = fopen(filename, "wb+");
     char buf[BUFFER_SIZE];
     int len;
