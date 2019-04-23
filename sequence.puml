@@ -99,12 +99,16 @@ R -> C2
 deactivate R
 activate C2
 
+W -> R
+deactivate W
+activate R #beige
+
 C2 --> W
 deactivate C2
-activate W #red
+activate W
 W -> C2
 deactivate W
-activate C2 #beige
+activate C2
 
 
 @enduml
