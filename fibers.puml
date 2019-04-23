@@ -1,0 +1,11 @@
+@startuml
+start
+fork
+  :accept connection;
+  :receive data;
+fork again
+  :wait for event;
+  :write data;
+end fork
+stop
+@enduml
