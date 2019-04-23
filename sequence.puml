@@ -1,0 +1,110 @@
+@startuml
+participant Reveiver as R
+activate R
+create "Connection 1" as C1
+R -> C1: accept
+create "Connection 2" as C2
+R -> C2: accept
+
+participant Writer as W
+activate W #beige
+
+R -> C1
+deactivate R
+activate C1
+C1 --> R
+deactivate C1
+activate R
+R -// W
+W -> C1
+deactivate W
+activate C1 #beige
+R -> C2
+deactivate R
+activate C2
+C2 --> R
+deactivate C2
+activate R
+
+C1 --> W
+deactivate C1
+activate W #beige
+
+R -// W
+W -> C2
+deactivate W
+activate C2 #beige
+
+R -> C1
+deactivate R
+activate C1
+
+C2 --> W
+deactivate C2
+activate W #beige
+
+C1 --> R
+deactivate C1
+activate R
+
+R -// W 
+W -> C1
+deactivate W
+activate C1 #beige
+C1 --> W 
+deactivate C1
+activate W #beige
+
+R -> C2
+deactivate R
+activate C2
+C2 --> R
+deactivate C2
+activate R
+R -// W
+W -> C2
+deactivate W
+activate C2 #beige
+
+R -> C1
+deactivate R
+activate C1
+C1 ---> R
+deactivate C1
+activate R
+
+R -// W
+C2 --> W
+deactivate C2
+activate W #beige
+
+R -> C2
+deactivate R
+activate C2
+
+W -> C1
+deactivate W
+activate C1 #beige
+
+C2 --> R
+deactivate C2
+activate R
+
+C1 --> W
+deactivate C1
+activate W #beige
+
+R -// W
+R -> C2
+deactivate R
+activate C2
+
+C2 --> W
+deactivate C2
+activate W #red
+W -> C2
+deactivate W
+activate C2 #beige
+
+
+@enduml
