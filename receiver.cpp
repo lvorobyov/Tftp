@@ -62,6 +62,7 @@ DWORD tftp::receiver::thread_main() noexcept {
                 if (FD_ISSET(it->get_sock(), &sss)) {
                     s --;
                     it->yield_from(primary);
+                    it->set_written();
                     if (! it->is_active()) {
                         FD_CLR(it->get_sock(), &fds);
                         it = connections.erase(it);

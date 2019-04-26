@@ -37,6 +37,8 @@ namespace tftp {
 
         bool is_writing() const;
 
+        void set_written() const;
+
         void set_auxiliary(fiber_primary &auxiliary_fiber);
 
         const event &get_received() const;

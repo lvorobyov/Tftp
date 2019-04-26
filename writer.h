@@ -61,9 +61,11 @@ namespace tftp {
                     // Detect is concurrent thread interposed
                     if (fib->is_writing()) {
                         primary.switch_to(other);
+                    } else {
+                        // Write data into file
+                        fib->set_written();
+                        fib->yield_from(primary);
                     }
-                    // Write data into file
-                    fib->yield_from(primary);
                 }
             } while (true);
         } catch (exception const& ex) {
