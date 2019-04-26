@@ -64,7 +64,6 @@ namespace tftp {
                     }
                     // Write data into file
                     fib->yield_from(primary);
-                    fib->set_writing(false);
                 }
             } while (true);
         } catch (exception const& ex) {

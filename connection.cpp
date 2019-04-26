@@ -28,6 +28,7 @@ void tftp::connection::fiber_main() noexcept {
         writing = true;
         fwrite(buf, sizeof(char), static_cast<size_t>(len), f);
         switch_to(*(auxiliary ?: &owner));
+        writing = false;
     }
     fclose(f);
     active = false;
@@ -70,8 +71,4 @@ void tftp::connection::yield_from(const fiber_primary &primary) {
 
 bool tftp::connection::is_writing() const {
     return writing;
-}
-
-void tftp::connection::set_writing(bool writing) {
-    connection::writing = writing;
 }
