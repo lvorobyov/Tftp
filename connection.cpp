@@ -25,6 +25,7 @@ void tftp::connection::fiber_main() noexcept {
     while((len = recv(sock, buf, BUFFER_SIZE, 0)) != 0) {
         if (auxiliary)
             switch_to(owner);
+        writing = true;
         fwrite(buf, sizeof(char), static_cast<size_t>(len), f);
         switch_to(*(auxiliary ?: &owner));
     }
@@ -65,4 +66,12 @@ void tftp::connection::yield_from(const fiber_primary &primary) {
     guard.wait();
     primary.switch_to(*this);
     guard.release();
+}
+
+bool tftp::connection::is_writing() const {
+    return writing;
+}
+
+void tftp::connection::set_writing(bool writing) {
+    connection::writing = writing;
 }

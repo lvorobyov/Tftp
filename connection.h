@@ -23,6 +23,8 @@ namespace tftp {
         bool active = true;
         event received{false};
         mutex guard;
+        bool writing = false;
+        event written;
 
     public:
         explicit connection(SOCKET sock, in_addr addr, fiber_primary &owner);
@@ -32,6 +34,10 @@ namespace tftp {
         const in_addr &get_addr() const;
 
         bool is_active() const;
+
+        bool is_writing() const;
+
+        void set_writing(bool writing);
 
         void set_auxiliary(fiber_primary &auxiliary_fiber);
 

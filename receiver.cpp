@@ -17,8 +17,8 @@ using namespace std;
 DWORD tftp::receiver::thread_main() noexcept {
     // Listen TCP clients
     list<connection> connections;
-    writer<list> assistant(connections);
     fiber_primary primary;
+    writer<list> assistant(connections, primary);
     auto cores = std::thread::hardware_concurrency();
     try {
         if (cores > 1)

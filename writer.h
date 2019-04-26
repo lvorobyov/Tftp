@@ -19,9 +19,10 @@ namespace tftp {
         Container<connection> &connections;
         event e_shutdown;
         event e_update;
+        fiber_primary &other;
 
     public:
-        explicit writer(Container<connection> &connections);
+        writer(Container<connection> &connections, fiber_primary &other);
 
         void on_change();
 
@@ -32,7 +33,8 @@ namespace tftp {
     };
 
     template<template <typename> class Container>
-    writer<Container>::writer(Container<connection> &connections) : connections(connections) { }
+    writer<Container>::writer(Container<connection> &connections, fiber_primary &other)
+        : connections(connections), other(other) { }
 
     template<template <typename> class Container>
     inline DWORD tftp::writer<Container>::thread_main() noexcept {
@@ -44,21 +46,27 @@ namespace tftp {
             for (auto &c: connections)
                 c.set_auxiliary(primary);
             do {
+                // Wait any received data
                 auto h = wait(false, handles.begin(), handles.end());
                 if (h == 0)
                     break;
                 if (h == 1) {
+                    // Update handles
                     handles.resize(2);
                     for (auto const &conn: connections)
                         handles.push_back(conn.get_received().raw_handle());
                 } else {
                     auto fib = connections.begin();
                     advance(fib, h - 2);
+                    // Detect is concurrent thread interposed
+                    if (fib->is_writing()) {
+                        primary.switch_to(other);
+                    }
+                    // Write data into file
                     fib->yield_from(primary);
+                    fib->set_writing(false);
                 }
             } while (true);
-            // Wait any received data
-            // Write data into file
         } catch (exception const& ex) {
             return 1;
         }
