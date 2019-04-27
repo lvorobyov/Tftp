@@ -18,10 +18,10 @@ tftp::send_dialog::send_dialog() {
         return 0;
     });
 
-    on_command(IDOK, [this](wm::command p)->INT_PTR {
-        add_peer(L"localhost", L"127.0.0.1");
-        add_peer(L"broadcast", L"255.255.255.255");
-        return 0;
+    on_command({IDOK,IDCANCEL}, [this](wm::command p)->BOOL {
+        if (p.control_id() != IDOK)
+            DestroyWindow(hwnd());
+        return TRUE;
     });
 }
 
