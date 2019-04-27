@@ -4,4 +4,4 @@
 
 #define IDD_SEND                                101
 #define IDI_ICON1                               102
-#define IDC_LIST1                               40001
+#define IDC_SEND                                40001
