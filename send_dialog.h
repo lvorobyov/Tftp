@@ -17,6 +17,8 @@ namespace tftp {
         listview list1;
     public:
         send_dialog();
+    private:
+        void add_peer(const wchar_t *host, const wchar_t *addr);
     };
 
 }
