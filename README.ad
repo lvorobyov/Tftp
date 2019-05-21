@@ -4,6 +4,8 @@
 
 == Реализация сервера
 
+image::server.png[Потоки сервера]
+
 code::server.cpp
 
 code::receiver.cpp
