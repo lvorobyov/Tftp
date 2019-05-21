@@ -4,6 +4,7 @@
 
 == Реализация сервера
 
+[width="70%"]
 image::server.png[Потоки сервера]
 
 code::server.cpp
