@@ -5,9 +5,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
+#include <cerrno>
 typedef int SOCKET;
 typedef char *LPSTR;
 typedef const char *LPCSTR;
@@ -37,7 +36,7 @@ using namespace cxxopts;
 
 #define BROADCAST "Broadcast"
 
-void discover(DWORD timeout, WORD port, vector<sockaddr_in> &peers);
+void discover(timeval timeout, WORD port, vector<sockaddr_in> &peers);
 
 class transfer {
 private:
@@ -91,7 +90,7 @@ int main(int argc, char* argv[]) {
                 peer = *((sockaddr_in*)pai->ai_addr);
         } else {
             vector<sockaddr_in> peers;
-            discover(timeout, port, peers);
+            discover({timeout / 1000, (timeout % 1000) * 1000}, port, peers);
             if (peers.size() > 1) {
                 int index;
                 printf("You choice: ");
@@ -122,7 +121,7 @@ int main(int argc, char* argv[]) {
     return status;
 }
 
-void discover(DWORD timeout, WORD port, vector<sockaddr_in> &peers) {
+void discover(timeval timeout, WORD port, vector<sockaddr_in> &peers) {
     SOCKET sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock == INVALID_SOCKET)
         throw logic_error("socket failed");
@@ -165,7 +164,7 @@ void transfer::send(const char *filename) {
     step = 1;
     if (connect(sock, (sockaddr*)&peer, sizeof(peer)) == SOCKET_ERROR)
         throw logic_error("connect failed");
-    DWORD timeout = 3000;
+    timeval timeout {3, 0};
     if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout)) == SOCKET_ERROR)
         throw logic_error("set tcp timeout failed");
     step = 2;
