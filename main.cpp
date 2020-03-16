@@ -53,6 +53,8 @@ public:
     void send(const char* filename);
 
     void cleanup() noexcept;
+
+    void close() noexcept;
 };
 
 int main(int argc, char* argv[]) {
@@ -187,16 +189,18 @@ void transfer::send(const char *filename) {
             progress --;
         }
     } while(len >= BUFFER_SIZE);
+    cleanup();
     while ((len = ::recv(sock,buf,BUFFER_SIZE, 0)) != 0) {
         for (int i = 0; i < len; ++i) {
             putc(buf[i], stdout);
         }
     }
-    cleanup();
+    close();
 }
 
 transfer::~transfer() noexcept {
     cleanup();
+    close();
 }
 
 void transfer::cleanup() noexcept {
@@ -206,10 +210,12 @@ void transfer::cleanup() noexcept {
             f = nullptr;
         case 2:
             shutdown(sock, SD_SEND);
-        case 1:
-            closesocket(sock);
-            sock = INVALID_SOCKET;
         default:break;
     }
     step = 0;
+}
+
+void transfer::close() noexcept {
+    closesocket(sock);
+    sock = INVALID_SOCKET;
 }
