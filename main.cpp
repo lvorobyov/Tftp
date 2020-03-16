@@ -1,5 +1,28 @@
+#if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#else
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+typedef int SOCKET;
+typedef char *LPSTR;
+typedef const char *LPCSTR;
+typedef bool BOOL;
+#define TRUE true
+typedef u_int16_t WORD;
+typedef u_int32_t DWORD;
+#define INVALID_SOCKET (-1)
+#define SOCKET_ERROR (-1)
+#define SD_SEND SHUT_WR
+#define closesocket ::close
+#define ioctlsocket ::ioctl
+inline int WSAGetLastError() { return errno; }
+#define WSAETIMEDOUT EAGAIN
+#endif
 #include <cstdio>
 #include <thread>
 #include <vector>
@@ -34,8 +57,10 @@ public:
 };
 
 int main(int argc, char* argv[]) {
+#ifdef _WIN32
     WSADATA wsd;
     WSAStartup(MAKEWORD(2,2), &wsd);
+#endif
     Options options(argv[0], "Transfer file client 1.0");
     options.add_options()
             ("r,host", "receiver host", value<string>())
@@ -59,7 +84,7 @@ int main(int argc, char* argv[]) {
             hints.ai_protocol = IPPROTO_TCP;
             addrinfo *pai;
             char str_port[6];
-            itoa(port, str_port, 10);
+            sprintf(str_port, "%d", port);
             if (getaddrinfo(result["host"].as<string>().c_str(), str_port, &hints, &pai) == SOCKET_ERROR)
                 throw logic_error("get host info failed");
             if (pai != nullptr)
@@ -91,7 +116,9 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s\n", ex.what());
         status = EXIT_FAILURE;
     }
+#ifdef _WIN32
     WSACleanup();
+#endif
     return status;
 }
 
@@ -115,7 +142,7 @@ void discover(DWORD timeout, WORD port, vector<sockaddr_in> &peers) {
     server.sin_addr.s_addr = htonl(INADDR_BROADCAST);
     if (sendto(sock, buf, 1, 0, (sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
         throw logic_error("send failed");
-    int length = sizeof(server);
+    socklen_t length = sizeof(server);
     int n;
     do {
         n = recvfrom(sock, buf, BUFFER_SIZE, 0, (sockaddr*)&server, &length);
@@ -125,7 +152,7 @@ void discover(DWORD timeout, WORD port, vector<sockaddr_in> &peers) {
             continue;
         buf[n] = '\0';
         const auto& s = server.sin_addr;
-        printf("%s %d.%d.%d.%d\n", buf, s.s_net, s.s_host, s.s_lh, s.s_impno);
+        printf("%s %s\n", buf, inet_ntoa(s));
         peers.push_back(server);
     } while (true);
     closesocket(sock);

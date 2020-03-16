@@ -9,7 +9,9 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories($ENV{WORK}/include)
 add_definitions(-D_UNICODE -DUNICODE)
 
-link_libraries(ws2_32)
+if(WIN32)
+    link_libraries(ws2_32)
+endif()
 add_executable(tftp main.cpp)
 add_executable(tftps server.cpp receiver.cpp connection.cpp)
 add_executable(tftp_gui WIN32 send_dialog.cpp send_dialog.h
