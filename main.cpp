@@ -184,10 +184,15 @@ void transfer::send(const char *filename) {
         ::send(sock,buf,len,0);
         if ((sum += len) * 80 / size > progress) {
             while (sum * 80 / size > progress++)
-                printf("=");
+                putc('=', stdout);
             progress --;
         }
     } while(len >= BUFFER_SIZE);
+    while ((len = ::recv(sock,buf,BUFFER_SIZE, 0)) != 0) {
+        for (int i = 0; i < len; ++i) {
+            putc(buf[i], stdout);
+        }
+    }
     cleanup();
 }
 
