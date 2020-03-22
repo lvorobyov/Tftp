@@ -12,7 +12,7 @@ add_definitions(-D_UNICODE -DUNICODE)
 if(WIN32)
     link_libraries(ws2_32)
 endif()
-add_executable(tftp main.cpp)
+add_executable(tftp main.cpp host_port.cpp host_port.h)
 add_executable(tftps server.cpp receiver.cpp connection.cpp)
 add_executable(tftp_gui WIN32 send_dialog.cpp send_dialog.h
         detector.cpp tftp.rc resource.h)

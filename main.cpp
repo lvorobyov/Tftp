@@ -30,6 +30,9 @@ using namespace std;
 #include <cxxopts.hpp>
 using namespace cxxopts;
 
+#include "host_port.h"
+using namespace btc;
+
 #define TFTP_PORT ((WORD)8969)
 
 #define BUFFER_SIZE 512
@@ -64,8 +67,7 @@ int main(int argc, char* argv[]) {
 #endif
     Options options(argv[0], "Transfer file client 1.0");
     options.add_options()
-            ("r,host", "receiver host", value<string>())
-            ("p,port", "receiver port", value<WORD>())
+            ("o,host", "receiver", value<string>())
             ("t,timeout", "discover delay timeout", value<DWORD>())
             ("h,help", "show this help");
     auto result = options.parse(argc,argv);
@@ -77,8 +79,16 @@ int main(int argc, char* argv[]) {
     sockaddr_in peer{0};
     int status = EXIT_SUCCESS;
     try {
-        auto port = result.count("port")? result["port"].as<WORD>() : TFTP_PORT;
+        string host;
+        WORD port;
         if (result.count("host")) {
+            host_port hp(result["host"].as<string>().c_str());
+            host = hp.get_host();
+            port = hp.get_port();
+        } else {
+            port = TFTP_PORT;
+        }
+        if (! host.empty()) {
             addrinfo hints{0};
             hints.ai_family = AF_INET;
             hints.ai_socktype = SOCK_STREAM;
@@ -86,7 +96,7 @@ int main(int argc, char* argv[]) {
             addrinfo *pai;
             char str_port[6];
             sprintf(str_port, "%d", port);
-            if (getaddrinfo(result["host"].as<string>().c_str(), str_port, &hints, &pai) == SOCKET_ERROR)
+            if (getaddrinfo(host.c_str(), str_port, &hints, &pai) == SOCKET_ERROR)
                 throw logic_error("get host info failed");
             if (pai != nullptr)
                 peer = *((sockaddr_in*)pai->ai_addr);
