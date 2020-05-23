@@ -142,7 +142,7 @@ void discover(timeval timeout, WORD port, vector<sockaddr_in> &peers) {
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
         throw logic_error("bind failed");
-    BOOL is_broadcast = TRUE;
+    int is_broadcast = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&is_broadcast, sizeof(is_broadcast)) == SOCKET_ERROR)
         throw logic_error("set broadcast failed");
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == SOCKET_ERROR)
