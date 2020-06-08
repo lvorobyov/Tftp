@@ -1,0 +1,3 @@
+[submodule "cmake/Modules/adoc"]
+	path = cmake/Modules/adoc
+	url = git@github.com:lvorobjov/AsciiDoc-CMake.git
