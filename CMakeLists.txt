@@ -5,6 +5,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/adoc")
 include(CsoiTEX)
 include(CsoiWin)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)
 
 add_definitions(-D_UNICODE -DUNICODE)
@@ -13,7 +16,8 @@ if(WIN32)
     link_libraries(ws2_32)
 endif()
 add_executable(tftp main.cpp host_port.cpp host_port.h)
-add_executable(tftps server.cpp receiver.cpp connection.cpp)
+add_executable(tftps server.cpp receiver.cpp connection.cpp helper.h file.h)
+target_link_libraries(tftps PRIVATE Threads::Threads)
 add_executable(tftp_gui WIN32 send_dialog.cpp send_dialog.h
         detector.cpp tftp.rc resource.h)
 target_link_libraries(tftp_gui comctl32)

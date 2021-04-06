@@ -7,29 +7,20 @@
 
 #define LISTEN_PORT 8969
 
-#include <win32/thread.h>
+#include <thread>
 
 #include "connection.h"
-#include <vector>
-#include <memory>
 
 namespace tftp {
+    using std::thread;
 
-    using namespace csoi::win32;
-
-    class receiver : public thread<receiver> {
+    class receiver {
     private:
-        SOCKET sock = INVALID_SOCKET;
+//        thread _worker;
+//        volatile bool active = true;
 
     public:
-        ~receiver() override;
-
-        void stop() noexcept;
-
-    protected:
-        DWORD thread_main() noexcept override;
-
-        bool active = true;
+        explicit receiver(volatile sig_atomic_t &active);
     };
 
 }

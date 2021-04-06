@@ -3,32 +3,26 @@
 //
 
 #include "connection.h"
-#include <cstdio>
+#include "file.h"
 #include <ctime>
 
 #define BUFFER_SIZE 512
 
-tftp::connection::connection(SOCKET sock, in_addr addr) : sock(sock), addr(addr) {}
+using namespace tftp;
 
-DWORD tftp::connection::thread_main() noexcept {
+connection::connection(SOCKET sock) : sock(sock, &closesocket) {}
+
+void connection::operator()() noexcept {
     // Download file
     time_t t = time(nullptr);
     char filename[MAX_PATH];
-    sprintf_s(filename, MAX_PATH, "downloaded_%d.mp4", t);
-    FILE *f = fopen(filename, "wb+");
+    sprintf(filename, "downloaded_%li%d.mp4", t, rand());
+    file_t f(fopen(filename, "wb+"), &fclose);
     char buf[BUFFER_SIZE];
-    int len;
-    while((len = recv(sock, buf, BUFFER_SIZE, 0)) != 0) {
-        fwrite(buf, sizeof(char), static_cast<size_t>(len), f);
+    ssize_t len;
+    while((len = recv(sock, buf, BUFFER_SIZE, 0)) > 0) {
+        fwrite(buf, sizeof(char), static_cast<size_t>(len), f.get());
     }
-    fclose(f);
-    return 0;
+    shutdown(sock, SHUT_WR);
 }
 
-tftp::connection::~connection() {
-    closesocket(sock);
-}
-
-const in_addr &tftp::connection::get_addr() const {
-    return addr;
-}

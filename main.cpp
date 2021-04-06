@@ -1,86 +1,54 @@
-#if defined(_WIN32)
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <cerrno>
-typedef int SOCKET;
-typedef char *LPSTR;
-typedef const char *LPCSTR;
-typedef bool BOOL;
-#define TRUE true
-typedef u_int16_t WORD;
-typedef u_int32_t DWORD;
-#define INVALID_SOCKET (-1)
-#define SOCKET_ERROR (-1)
-#define SD_SEND SHUT_WR
-#define closesocket ::close
-#define ioctlsocket ::ioctl
-inline int WSAGetLastError() { return errno; }
-#define WSAETIMEDOUT EAGAIN
-#endif
-#include <cstdio>
+#include <cstring>
 #include <thread>
 #include <vector>
-using namespace std;
+#include <stdexcept>
+#include <iostream>
+#include "socket.h"
+#include "file.h"
+using namespace tftp;
+
+using std::logic_error;
+using std::cout;
+using std::endl;
+using std::vector;
+using std::string;
 
 #include <cxxopts.hpp>
 using namespace cxxopts;
 
 #include "host_port.h"
-using namespace btc;
+using btc::host_port;
 
-#define TFTP_PORT ((WORD)8969)
+#define TFTP_PORT ((uint16_t)8969)
 
 #define BUFFER_SIZE 512
 
 #define BROADCAST "Broadcast"
 
-void discover(timeval timeout, WORD port, vector<sockaddr_in> &peers);
+void discover(uint32_t timeout, uint16_t port, vector<sockaddr_in> &peers);
 
-class transfer {
-private:
-    sockaddr_in peer;
-    int step = 0;
-    SOCKET sock = INVALID_SOCKET;
-    FILE *f = nullptr;
-
-public:
-    explicit transfer(const sockaddr_in &peer) : peer(peer) {}
-
-    virtual ~transfer() noexcept;
-
-    void send(const char* filename);
-
-    void cleanup() noexcept;
-
-    void close() noexcept;
-};
+void transfer(const sockaddr_in &peer, const char* filename);
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
-    WSADATA wsd;
-    WSAStartup(MAKEWORD(2,2), &wsd);
+    wsa_data wsa;
 #endif
     Options options(argv[0], "Transfer file client 1.0");
     options.add_options()
             ("o,host", "receiver", value<string>())
-            ("t,timeout", "discover delay timeout", value<DWORD>())
+            ("t,timeout", "discover delay timeout", value<uint32_t>())
             ("h,help", "show this help");
     auto result = options.parse(argc,argv);
     if (result.count("help")) {
         cout << options.help() << endl;
         return 0;
     }
-    DWORD timeout = result.count("t")? result["t"].as<DWORD>() : 500;
+    uint32_t timeout = result.count("t")? result["t"].as<uint32_t>() : 500;
     sockaddr_in peer{0};
     int status = EXIT_SUCCESS;
     try {
         string host;
-        WORD port;
+        uint16_t port;
         if (result.count("host")) {
             host_port hp(result["host"].as<string>().c_str());
             host = hp.get_host();
@@ -102,7 +70,7 @@ int main(int argc, char* argv[]) {
                 peer = *((sockaddr_in*)pai->ai_addr);
         } else {
             vector<sockaddr_in> peers;
-            discover({timeout / 1000, (timeout % 1000) * 1000}, port, peers);
+            discover(timeout, port, peers);
             if (peers.size() > 1) {
                 int index;
                 printf("You choice: ");
@@ -114,27 +82,23 @@ int main(int argc, char* argv[]) {
             }
         }
         if (peer.sin_addr.s_addr != 0) {
-            transfer tftp(peer);
             for (int i = 1; i < argc; ++i) {
                 if (argv[i][0] == '-') {
                     i ++;
                     continue;
                 }
-                tftp.send(argv[i]);
+                transfer(peer, argv[i]);
             }
         }
-    } catch (exception const& ex) {
+    } catch (std::exception const& ex) {
         fprintf(stderr, "%s\n", ex.what());
         status = EXIT_FAILURE;
     }
-#ifdef _WIN32
-    WSACleanup();
-#endif
     return status;
 }
 
-void discover(timeval timeout, WORD port, vector<sockaddr_in> &peers) {
-    SOCKET sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+void discover(uint32_t timeout, uint16_t port, vector<sockaddr_in> &peers) {
+    socket_t sock(socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP), &closesocket);
     if (sock == INVALID_SOCKET)
         throw logic_error("socket failed");
     sockaddr_in addr{AF_INET}, server{AF_INET};
@@ -142,10 +106,9 @@ void discover(timeval timeout, WORD port, vector<sockaddr_in> &peers) {
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
         throw logic_error("bind failed");
-    int is_broadcast = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&is_broadcast, sizeof(is_broadcast)) == SOCKET_ERROR)
+    if (set_option(sock, SO_BROADCAST, true) == SOCKET_ERROR)
         throw logic_error("set broadcast failed");
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == SOCKET_ERROR)
+    if (set_timeout(sock, SO_RCVTIMEO, timeout) == SOCKET_ERROR)
         throw logic_error("set timeout failed");
     char buf[BUFFER_SIZE];
     strcpy(buf, BROADCAST);
@@ -154,10 +117,10 @@ void discover(timeval timeout, WORD port, vector<sockaddr_in> &peers) {
     if (sendto(sock, buf, 1, 0, (sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
         throw logic_error("send failed");
     socklen_t length = sizeof(server);
-    int n;
+    ssize_t n;
     do {
         n = recvfrom(sock, buf, BUFFER_SIZE, 0, (sockaddr*)&server, &length);
-        if (n == SOCKET_ERROR && WSAGetLastError() == WSAETIMEDOUT)
+        if (n == SOCKET_ERROR && errno == EAGAIN)
             break;
         if (server.sin_addr.s_addr == htonl(INADDR_LOOPBACK) && strcmp(buf, BROADCAST) == 0)
             continue;
@@ -166,66 +129,45 @@ void discover(timeval timeout, WORD port, vector<sockaddr_in> &peers) {
         printf("%s %s\n", buf, inet_ntoa(s));
         peers.push_back(server);
     } while (true);
-    closesocket(sock);
 }
 
-void transfer::send(const char *filename) {
-    sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+void transfer(const sockaddr_in &peer, const char *filename) {
+    socket_t sock(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP), &closesocket);
     if (sock == INVALID_SOCKET)
         throw logic_error("socket error");
-    step = 1;
     if (connect(sock, (sockaddr*)&peer, sizeof(peer)) == SOCKET_ERROR)
         throw logic_error("connect failed");
-    timeval timeout {3, 0};
-    if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout)) == SOCKET_ERROR)
-        throw logic_error("set tcp timeout failed");
-    step = 2;
-    f = fopen(filename, "rb+");
-    if (f == nullptr)
-        throw system_error(errno,system_category(),"file open failed");
-    step = 3;
-    fseek(f, 0, SEEK_END);
-    const int size = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    try {
+        if (set_timeout(sock, SO_SNDTIMEO, 3000) == SOCKET_ERROR)
+            throw logic_error("set tcp timeout failed");
+        file_t f(fopen(filename, "rb+"), &fclose);
+        if (! f)
+            throw logic_error("file open failed");
+        fseek(f.get(), 0, SEEK_END);
+        long size = ftell(f.get());
+        fseek(f.get(), 0, SEEK_SET);
+        char buf[BUFFER_SIZE];
+        size_t sum = 0, progress = 0;
+        size_t len;
+        do {
+            len = fread(buf,sizeof(char),BUFFER_SIZE,f.get());
+            ::send(sock,buf,len,0);
+            if ((sum += len) * 80 / size > progress) {
+                while (sum * 80 / size > progress++)
+                    putc('=', stdout);
+                progress --;
+            }
+        } while(len >= BUFFER_SIZE);
+        shutdown(sock, SHUT_WR);
+    } catch (...) {
+        shutdown(sock, SHUT_WR);
+        throw;
+    }
     char buf[BUFFER_SIZE];
-    int sum = 0, progress = 0;
-    int len;
-    do {
-        len = fread(buf,sizeof(char),BUFFER_SIZE,f);
-        ::send(sock,buf,len,0);
-        if ((sum += len) * 80 / size > progress) {
-            while (sum * 80 / size > progress++)
-                putc('=', stdout);
-            progress --;
-        }
-    } while(len >= BUFFER_SIZE);
-    cleanup();
-    while ((len = ::recv(sock,buf,BUFFER_SIZE, 0)) != 0) {
+    ssize_t len;
+    while ((len = recv(sock, buf, BUFFER_SIZE, 0)) > 0) {
         for (int i = 0; i < len; ++i) {
             putc(buf[i], stdout);
         }
     }
-    close();
-}
-
-transfer::~transfer() noexcept {
-    cleanup();
-    close();
-}
-
-void transfer::cleanup() noexcept {
-    switch (step) {
-        case 3:
-            fclose(f);
-            f = nullptr;
-        case 2:
-            shutdown(sock, SD_SEND);
-        default:break;
-    }
-    step = 0;
-}
-
-void transfer::close() noexcept {
-    closesocket(sock);
-    sock = INVALID_SOCKET;
 }
