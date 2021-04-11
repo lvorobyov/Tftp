@@ -1,3 +1,6 @@
+// Copyright (c) 2019, 2021, Лев Воробьёв
+// This file is licensed under GPL v3
+
 #include <cstring>
 #include <thread>
 #include <vector>
@@ -17,7 +20,7 @@ using std::string;
 using namespace cxxopts;
 
 #include "host_port.h"
-using btc::host_port;
+using utils::host_port;
 
 #define TFTP_PORT ((uint16_t)8969)
 

@@ -1,14 +1,14 @@
-//
-// Created by lev on 04.03.2020.
-//
+// Copyright (c) 2020, Лев Воробьёв
+// This file is licensed under GPL v3
 
 #include <cstring>
 #include <stdexcept>
 #include <cassert>
 #include "host_port.h"
-using namespace btc;
 
-btc::host_port::host_port(const char *str) {
+using namespace utils;
+
+host_port::host_port(const char *str) {
     char * host = strdup(str);
     // номера порта доолжен быть
     char *p = strchr(host, ':');
@@ -28,10 +28,10 @@ btc::host_port::host_port(const char *str) {
     free(host);
 }
 
-const std::string &btc::host_port::get_host() const {
+const string &host_port::get_host() const {
     return _host;
 }
 
-u_short btc::host_port::get_port() const {
+u_short host_port::get_port() const {
     return _port;
 }

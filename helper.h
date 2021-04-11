@@ -1,6 +1,5 @@
-//
-// Created by Lev on 05.04.2021.
-//
+// Copyright (c) 2021, Лев Воробьёв
+// This file is licensed under GPL v3
 
 #ifndef TFTP_HELPER_H
 #define TFTP_HELPER_H

@@ -1,13 +1,12 @@
-//
-// Created by lev on 04.03.2020.
-//
+// Copyright (c) 2020, Лев Воробьёв
+// This file is licensed under GPL v3
 
-#ifndef STRATUM_PROXY_HOST_PORT_H
-#define STRATUM_PROXY_HOST_PORT_H
+#ifndef _HOST_PORT_H
+#define _HOST_PORT_H
 
 #include <string>
 
-namespace btc {
+namespace utils {
     using namespace std;
 
     class host_port {
@@ -31,4 +30,4 @@ namespace btc {
 
 }
 
-#endif //STRATUM_PROXY_HOST_PORT_H
+#endif //_HOST_PORT_H

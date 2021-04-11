@@ -1,6 +1,5 @@
-//
-// Created by Lev on 13.02.2019.
-//
+// Copyright (c) 2019, 2021, Лев Воробьёв
+// This file is licensed under GPL v3
 
 #include "connection.h"
 #include "file.h"
